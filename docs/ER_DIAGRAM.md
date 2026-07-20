@@ -6,8 +6,11 @@ This document describes the database design for **Schedula**, a Doctor Appointme
 
 ## 1. Entity Relationship Diagram (ERD)
 
-Below is the visual ER diagram generated using Mermaid notation:
+Below is the visual ER diagram (also available as an image in the repository at `docs/ER_DIAGRAM/ER-Diagram.png`):
 
+![Schedula ER Diagram](ER_DIAGRAM/ER-Diagram.png)
+
+### Mermaid Representation
 ```mermaid
 erDiagram
     USER {
