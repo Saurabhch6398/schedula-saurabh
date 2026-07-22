@@ -1,5 +1,5 @@
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -8,51 +8,52 @@ generator client {
 }
 
 model User {
-  id           Int      @id @default(autoincrement())
-  email        String   @unique
-  passwordHash String   @map("password_hash")
-  firstName    String   @map("first_name")
-  lastName     String   @map("last_name")
-  phone        String?
-  role         String   // "DOCTOR" | "PATIENT" | "ADMIN"
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id             Int             @id @default(autoincrement())
+  email          String          @unique
+  passwordHash   String          @map("password_hash")
+  firstName      String          @map("first_name")
+  lastName       String          @map("last_name")
+  phone          String?
+  role           String          // "DOCTOR" | "PATIENT" | "ADMIN"
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
 
-  doctor       Doctor?
-  patients     Patient[]
+  doctorProfile  DoctorProfile?
+  patientProfile PatientProfile?
 
   @@map("users")
 }
 
-model Doctor {
+model DoctorProfile {
   id              Int      @id @default(autoincrement())
   userId          Int      @unique @map("user_id")
-  specialization  String?
-  clinicName      String?  @map("clinic_name")
-  biography       String?
-  address         String?
-  consultationFee Float?   @map("consultation_fee")
+  fullName        String   @map("full_name")
+  specialization  String
+  experience      Int
+  qualification   String
+  consultationFee Float    @map("consultation_fee")
+  availability    String
+  profileDetails  String?  @map("profile_details")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("doctors")
+  @@map("doctor_profiles")
 }
 
-model Patient {
-  id             Int       @id @default(autoincrement())
-  userId         Int       @map("user_id")
-  name           String
-  dateOfBirth    DateTime? @map("date_of_birth")
-  sex            String?
-  weight         Float?
-  bloodGroup     String?   @map("blood_group")
-  medicalHistory String?   @map("medical_history")
-  createdAt      DateTime  @default(now()) @map("created_at")
-  updatedAt      DateTime  @updatedAt @map("updated_at")
+model PatientProfile {
+  id         Int      @id @default(autoincrement())
+  userId     Int      @unique @map("user_id")
+  fullName   String   @map("full_name")
+  age        Int
+  gender     String
+  contact    String
+  healthInfo String?  @map("health_info")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
 
-  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("patients")
+  @@map("patient_profiles")
 }
