@@ -1,0 +1,58 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  firstName    String   @map("first_name")
+  lastName     String   @map("last_name")
+  phone        String?
+  role         String   // "DOCTOR" | "PATIENT" | "ADMIN"
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  doctor       Doctor?
+  patients     Patient[]
+
+  @@map("users")
+}
+
+model Doctor {
+  id              Int      @id @default(autoincrement())
+  userId          Int      @unique @map("user_id")
+  specialization  String?
+  clinicName      String?  @map("clinic_name")
+  biography       String?
+  address         String?
+  consultationFee Float?   @map("consultation_fee")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("doctors")
+}
+
+model Patient {
+  id             Int       @id @default(autoincrement())
+  userId         Int       @map("user_id")
+  name           String
+  dateOfBirth    DateTime? @map("date_of_birth")
+  sex            String?
+  weight         Float?
+  bloodGroup     String?   @map("blood_group")
+  medicalHistory String?   @map("medical_history")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("patients")
+}
