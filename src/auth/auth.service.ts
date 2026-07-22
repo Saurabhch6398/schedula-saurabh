@@ -33,36 +33,15 @@ export class AuthService {
     const firstName = nameParts[0] || '';
     const lastName = nameParts.slice(1).join(' ') || '';
 
-    // Create user and profile in transaction
-    const newUser = await this.prisma.$transaction(async (tx) => {
-      const user = await tx.user.create({
-        data: {
-          email,
-          passwordHash,
-          firstName,
-          lastName,
-          role,
-        },
-      });
-
-      if (role === 'DOCTOR') {
-        await tx.doctor.create({
-          data: {
-            userId: user.id,
-            // specialisation, clinicName etc. can be updated later
-          },
-        });
-      } else if (role === 'PATIENT') {
-        await tx.patient.create({
-          data: {
-            userId: user.id,
-            name: name.trim(),
-            // DOB, sex etc. can be updated later
-          },
-        });
-      }
-
-      return user;
+    // Create user
+    const newUser = await this.prisma.user.create({
+      data: {
+        email,
+        passwordHash,
+        firstName,
+        lastName,
+        role,
+      },
     });
 
     // Return the response containing basic details
