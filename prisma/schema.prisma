@@ -38,8 +38,39 @@ model DoctorProfile {
   updatedAt       DateTime @updatedAt @map("updated_at")
 
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recurringAvailabilities RecurringAvailability[]
+  customAvailabilities    CustomAvailability[]
 
   @@map("doctor_profiles")
+}
+
+model RecurringAvailability {
+  id              Int           @id @default(autoincrement())
+  doctorProfileId Int           @map("doctor_profile_id")
+  dayOfWeek       String        // MONDAY, TUESDAY, etc.
+  startTime       String        // "HH:MM"
+  endTime         String        // "HH:MM"
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  doctorProfile   DoctorProfile @relation(fields: [doctorProfileId], references: [id], onDelete: Cascade)
+
+  @@map("recurring_availabilities")
+}
+
+model CustomAvailability {
+  id              Int           @id @default(autoincrement())
+  doctorProfileId Int           @map("doctor_profile_id")
+  date            DateTime      @db.Date
+  startTime       String?       // "HH:MM" (null when unavailable)
+  endTime         String?       // "HH:MM" (null when unavailable)
+  isAvailable     Boolean       @default(true) @map("is_available")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  doctorProfile   DoctorProfile @relation(fields: [doctorProfileId], references: [id], onDelete: Cascade)
+
+  @@map("custom_availabilities")
 }
 
 model PatientProfile {
