@@ -4,7 +4,15 @@ export class UpdateAvailabilityDto {
   @IsOptional()
   @IsString()
   @IsIn(
-    ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'],
+    [
+      'MONDAY',
+      'TUESDAY',
+      'WEDNESDAY',
+      'THURSDAY',
+      'FRIDAY',
+      'SATURDAY',
+      'SUNDAY',
+    ],
     { message: 'dayOfWeek must be a valid uppercase day of the week' },
   )
   dayOfWeek?: string;

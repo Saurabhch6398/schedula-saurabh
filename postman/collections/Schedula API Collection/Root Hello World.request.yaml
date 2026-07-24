@@ -1,0 +1,14 @@
+$kind: http-request
+url: "{{baseUrl}}/"
+method: GET
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status code is 200", function () {
+          pm.response.to.have.status(200);
+      });
+      pm.test("Response is Hello World!", function () {
+          pm.expect(pm.response.text()).to.equal("Hello World!");
+      });
+    language: text/javascript
+order: 5000

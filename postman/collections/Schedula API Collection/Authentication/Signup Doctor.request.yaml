@@ -1,0 +1,20 @@
+$kind: http-request
+url: "{{baseUrl}}/signup"
+method: POST
+body:
+  type: json
+  content: |-
+    {
+        "name": "Dr. Rahul Sharma",
+        "email": "rahul.sharma@example.com",
+        "password": "password123",
+        "role": "DOCTOR"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status code is 201 or 409", function () {
+          pm.expect(pm.response.code).to.be.oneOf([201, 409]);
+      });
+    language: text/javascript
+order: 1000

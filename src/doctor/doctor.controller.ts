@@ -1,31 +1,100 @@
-import { Controller, Get, Post, Patch, Body, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Body,
+  UseGuards,
+  Request,
+  Param,
+  Query,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { DoctorService } from './doctor.service';
+import { AvailabilityService } from './availability.service';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CreateDoctorProfileDto } from './dto/create-doctor-profile.dto';
 import { UpdateDoctorProfileDto } from './dto/update-doctor-profile.dto';
+import { SelectSchedulingDto } from './dto/select-scheduling.dto';
+
+interface RequestWithUser {
+  user: {
+    userId: number;
+    email: string;
+    role: string;
+  };
+}
 
 @Controller('doctor')
 @UseGuards(AuthGuard, RolesGuard)
 export class DoctorController {
-  constructor(private readonly doctorService: DoctorService) {}
+  constructor(
+    private readonly doctorService: DoctorService,
+    private readonly availabilityService: AvailabilityService,
+  ) {}
 
   @Post('profile')
   @Roles('DOCTOR')
-  async createProfile(@Request() req, @Body() dto: CreateDoctorProfileDto) {
+  async createProfile(
+    @Request() req: RequestWithUser,
+    @Body() dto: CreateDoctorProfileDto,
+  ) {
     return this.doctorService.createProfile(req.user.userId, dto);
   }
 
   @Get('profile')
   @Roles('DOCTOR')
-  async getProfile(@Request() req) {
+  async getProfile(@Request() req: RequestWithUser) {
     return this.doctorService.getProfile(req.user.userId);
   }
 
   @Patch('profile')
   @Roles('DOCTOR')
-  async updateProfile(@Request() req, @Body() dto: UpdateDoctorProfileDto) {
+  async updateProfile(
+    @Request() req: RequestWithUser,
+    @Body() dto: UpdateDoctorProfileDto,
+  ) {
     return this.doctorService.updateProfile(req.user.userId, dto);
+  }
+
+  @Patch('scheduling')
+  @Roles('DOCTOR')
+  async updateScheduling(
+    @Request() req: RequestWithUser,
+    @Body() dto: SelectSchedulingDto,
+  ) {
+    return this.doctorService.updateScheduling(req.user.userId, dto);
+  }
+
+  @Get(':id/slots')
+  @Roles('DOCTOR', 'PATIENT')
+  async getSlots(
+    @Param('id', ParseIntPipe) doctorId: number,
+    @Query('date') date: string,
+  ) {
+    return this.availabilityService.getStreamSlots(doctorId, date);
+  }
+
+  @Get(':id/waves')
+  @Roles('DOCTOR', 'PATIENT')
+  async getWaves(
+    @Param('id', ParseIntPipe) doctorId: number,
+    @Query('date') date: string,
+  ) {
+    return this.availabilityService.getWaveWindows(doctorId, date);
+  }
+
+  @Get(':id/availability')
+  @Roles('DOCTOR', 'PATIENT')
+  async getDoctorAvailability(
+    @Param('id', ParseIntPipe) doctorId: number,
+    @Query('date') date?: string,
+  ) {
+    if (date) {
+      return this.availabilityService.getAvailabilityForDate(date, doctorId);
+    }
+    return this.availabilityService.getDoctorAllAvailability(doctorId);
   }
 }

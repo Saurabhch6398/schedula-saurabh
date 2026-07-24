@@ -1,4 +1,11 @@
-import { IsNotEmpty, IsInt, IsNumber, IsOptional, IsString } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsIn,
+} from 'class-validator';
 
 export class CreateDoctorProfileDto {
   @IsNotEmpty({ message: 'Full Name is required' })
@@ -28,4 +35,18 @@ export class CreateDoctorProfileDto {
   @IsOptional()
   @IsString()
   profileDetails?: string;
+
+  @IsOptional()
+  @IsIn(['STREAM', 'WAVE'], {
+    message: 'schedulingType must be STREAM or WAVE',
+  })
+  schedulingType?: 'STREAM' | 'WAVE';
+
+  @IsOptional()
+  @IsInt({ message: 'slotDuration must be an integer' })
+  slotDuration?: number;
+
+  @IsOptional()
+  @IsInt({ message: 'bufferTime must be an integer' })
+  bufferTime?: number;
 }

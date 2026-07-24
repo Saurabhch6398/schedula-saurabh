@@ -1,0 +1,5 @@
+$kind: collection
+description: API collection for Schedula API endpoints (Auth, Doctor Onboarding, Patient Onboarding)
+variables:
+  baseUrl: http://localhost:3000
+  jwtToken: ""
