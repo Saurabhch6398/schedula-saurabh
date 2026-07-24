@@ -12,6 +12,14 @@ import { CreateOverrideDto } from './dto/create-override.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { DoctorProfile } from '@prisma/client';
 
+export interface WaveWindowResponse {
+  id: number;
+  window: string;
+  available: string;
+  maxCapacity: number;
+  bookedCount: number;
+}
+
 @Injectable()
 export class AvailabilityService {
   constructor(
@@ -564,6 +572,9 @@ export class AvailabilityService {
     const now = Date.now();
 
     for (const avail of availabilities) {
+      if (!avail.startTime || !avail.endTime) {
+        continue;
+      }
       const startMin = this.parseTimeToMinutes(avail.startTime);
       const endMin = this.parseTimeToMinutes(avail.endTime);
 
@@ -590,6 +601,9 @@ export class AvailabilityService {
 
         // Booked check
         const isBooked = appointments.some((app) => {
+          if (!app.slotStart || !app.slotEnd) {
+            return false;
+          }
           const appStartMin =
             app.slotStart.getUTCHours() * 60 + app.slotStart.getUTCMinutes();
           const appEndMin =
@@ -655,13 +669,6 @@ export class AvailabilityService {
       orderBy: { startTime: 'asc' },
     });
 
-    interface WaveWindowResponse {
-      id: number;
-      window: string;
-      available: string;
-      maxCapacity: number;
-      bookedCount: number;
-    }
     const results: WaveWindowResponse[] = [];
     const now = Date.now();
 

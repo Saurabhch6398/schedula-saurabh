@@ -15,8 +15,8 @@ export class DoctorService {
 
   private validateSchedulingConfig(
     schedulingType?: 'STREAM' | 'WAVE',
-    slotDuration?: number,
-    bufferTime?: number,
+    slotDuration?: number | null,
+    bufferTime?: number | null,
     isSelection = false,
   ) {
     if (schedulingType === 'STREAM') {

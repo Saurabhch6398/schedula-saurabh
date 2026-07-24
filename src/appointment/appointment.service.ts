@@ -231,8 +231,8 @@ export class AppointmentService {
         id: app.id,
         doctorId: doctorProfile.id,
         patientId: patientProfile.id,
-        slotStart: app.slotStart.toISOString(),
-        slotEnd: app.slotEnd.toISOString(),
+        slotStart: app.slotStart!.toISOString(),
+        slotEnd: app.slotEnd!.toISOString(),
         appointmentType: 'STREAM',
       };
     } else {
@@ -334,8 +334,8 @@ export class AppointmentService {
     }
 
     if (app.appointmentType === 'WAVE') {
-      const startStr = this.formatToAMPM(app.slotStart);
-      const endStr = this.formatToAMPM(app.slotEnd);
+      const startStr = this.formatToAMPM(app.slotStart!);
+      const endStr = this.formatToAMPM(app.slotEnd!);
       return {
         id: app.id,
         doctorId: app.doctorProfileId,
@@ -351,8 +351,8 @@ export class AppointmentService {
         doctorId: app.doctorProfileId,
         patientId: app.patientProfileId,
         appointmentType: 'STREAM',
-        slotStart: app.slotStart.toISOString(),
-        slotEnd: app.slotEnd.toISOString(),
+        slotStart: app.slotStart!.toISOString(),
+        slotEnd: app.slotEnd!.toISOString(),
         createdAt: app.createdAt.toISOString(),
       };
     }

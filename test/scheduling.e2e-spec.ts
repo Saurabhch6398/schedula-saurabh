@@ -226,9 +226,10 @@ describe('Advanced Scheduling System (e2e)', () => {
       const profile = await prisma.doctorProfile.findUnique({
         where: { id: doctorProfileId },
       });
-      expect(profile.schedulingType).toBe('STREAM');
-      expect(profile.slotDuration).toBe(15);
-      expect(profile.bufferTime).toBe(5);
+      expect(profile).not.toBeNull();
+      expect(profile!.schedulingType).toBe('STREAM');
+      expect(profile!.slotDuration).toBe(15);
+      expect(profile!.bufferTime).toBe(5);
     });
   });
 
