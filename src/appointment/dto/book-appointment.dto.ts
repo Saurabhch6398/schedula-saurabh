@@ -1,8 +1,9 @@
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsInt } from 'class-validator';
 
 export class BookAppointmentDto {
   @IsNotEmpty({ message: 'doctorId is required' })
-  doctorId: any;
+  @IsInt({ message: 'doctorId must be an integer' })
+  doctorId: number;
 
   @IsOptional()
   @IsString()
@@ -13,5 +14,7 @@ export class BookAppointmentDto {
   date?: string;
 
   @IsOptional()
-  waveId?: any;
+  @IsInt({ message: 'waveId must be an integer' })
+  waveId?: number;
 }
+

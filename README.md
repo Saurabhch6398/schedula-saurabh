@@ -27,7 +27,17 @@ Doctor appointment booking system backend built with NestJS, TypeScript, and Pos
 
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+Schedula is a Doctor Appointment Scheduling System. It supports patient registration, doctor discovery, and advanced appointment booking utilizing multiple scheduling strategies (Stream and Wave).
+
+## Availability
+
+### Implemented and tested:
+- Stream Scheduling
+- Wave Scheduling
+- Wave Booking with Token Assignment
+- Sequential Token Generation
+- Duplicate Booking Validation
+- Wave Capacity Validation
 
 ## Project setup
 

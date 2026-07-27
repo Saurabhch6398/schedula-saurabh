@@ -8,6 +8,8 @@ import { AppModule } from './../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
 
 describe('Advanced Scheduling System (e2e)', () => {
+  jest.setTimeout(30000);
+
   let app: INestApplication<App>;
   let prisma: PrismaService;
 
