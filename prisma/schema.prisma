@@ -120,6 +120,13 @@ model WaveSchedule {
   @@map("wave_schedules")
 }
 
+enum AppointmentStatus {
+  BOOKED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
 model Appointment {
   id               Int             @id @default(autoincrement())
   doctorProfileId  Int             @map("doctor_profile_id")
@@ -131,6 +138,15 @@ model Appointment {
   waveScheduleId   Int?            @map("wave_schedule_id")
   createdAt        DateTime        @default(now()) @map("created_at")
   updatedAt        DateTime        @updatedAt @map("updated_at")
+
+  status             AppointmentStatus @default(BOOKED)
+  bookingSource      String            @default("ONLINE") @map("booking_source")
+  cancellationReason String?           @map("cancellation_reason")
+  cancelledAt        DateTime?         @map("cancelled_at")
+
+  diagnosis    String?
+  prescription String?
+  followUp     String? @map("follow_up")
 
   doctorProfile    DoctorProfile   @relation(fields: [doctorProfileId], references: [id], onDelete: Cascade)
   patientProfile   PatientProfile  @relation(fields: [patientProfileId], references: [id], onDelete: Cascade)

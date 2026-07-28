@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString, IsInt } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsInt, IsIn } from 'class-validator';
 
 export class BookAppointmentDto {
   @IsNotEmpty({ message: 'doctorId is required' })
@@ -16,5 +16,19 @@ export class BookAppointmentDto {
   @IsOptional()
   @IsInt({ message: 'waveId must be an integer' })
   waveId?: number;
-}
 
+  @IsOptional()
+  @IsString()
+  startTime?: string;
+
+  @IsOptional()
+  @IsString()
+  endTime?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(['ONLINE', 'RECEPTION'], {
+    message: 'bookingSource must be ONLINE or RECEPTION',
+  })
+  bookingSource?: string;
+}

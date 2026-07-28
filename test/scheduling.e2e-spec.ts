@@ -307,8 +307,8 @@ describe('Advanced Scheduling System (e2e)', () => {
         })
         .expect(HttpStatus.CREATED);
 
-      expect(res.body.appointmentType).toBe('STREAM');
-      expect(res.body.doctorId).toBe(doctorProfileId);
+      expect(res.body.data.appointmentType).toBe('STREAM');
+      expect(res.body.data.doctorId).toBe(doctorProfileId);
 
       // Verify slot is removed/unavailable in subsequent fetches
       const slotsRes = await request(app.getHttpServer())
@@ -415,8 +415,8 @@ describe('Advanced Scheduling System (e2e)', () => {
         })
         .expect(HttpStatus.CREATED);
 
-      expect(res1.body.appointmentWindow).toBe('10AM-11AM');
-      expect(res1.body.tokenNumber).toBe(1);
+      expect(res1.body.data.appointmentWindow).toBe('10AM-11AM');
+      expect(res1.body.data.tokenNumber).toBe(1);
 
       // Patient 2 books
       const res2 = await request(app.getHttpServer())
@@ -428,8 +428,8 @@ describe('Advanced Scheduling System (e2e)', () => {
         })
         .expect(HttpStatus.CREATED);
 
-      expect(res2.body.appointmentWindow).toBe('10AM-11AM');
-      expect(res2.body.tokenNumber).toBe(2);
+      expect(res2.body.data.appointmentWindow).toBe('10AM-11AM');
+      expect(res2.body.data.tokenNumber).toBe(2);
 
       // Verify availability is updated
       const wavesRes = await request(app.getHttpServer())
@@ -463,6 +463,56 @@ describe('Advanced Scheduling System (e2e)', () => {
         .expect(HttpStatus.CONFLICT);
 
       expect(res.body.message).toBe('Wave Full');
+    });
+
+    it('should get all wave availabilities for doctor using GET /doctor/availability', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/doctor/availability')
+        .set('Authorization', `Bearer ${doctorToken}`)
+        .expect(HttpStatus.OK);
+
+      expect(res.body.length).toBe(1);
+      expect(res.body[0].isWave).toBe(true);
+      expect(res.body[0].maxCapacity).toBe(2);
+    });
+
+    it('should update WAVE availability successfully', async () => {
+      await request(app.getHttpServer())
+        .patch(`/doctor/availability/${waveScheduleId}`)
+        .set('Authorization', `Bearer ${doctorToken}`)
+        .send({
+          maxCapacity: 5,
+          startTime: '10:30',
+          endTime: '11:30',
+        })
+        .expect(HttpStatus.OK);
+
+      // Verify slot is updated
+      const wavesRes = await request(app.getHttpServer())
+        .get(`/doctor/${doctorProfileId}/waves`)
+        .query({ date: testDate })
+        .set('Authorization', `Bearer ${patient1Token}`)
+        .expect(HttpStatus.OK);
+
+      expect(wavesRes.body.length).toBe(1);
+      expect(wavesRes.body[0].window).toBe('10:30AM-11:30AM');
+      expect(wavesRes.body[0].maxCapacity).toBe(5);
+    });
+
+    it('should delete WAVE availability successfully', async () => {
+      await request(app.getHttpServer())
+        .delete(`/doctor/availability/${waveScheduleId}`)
+        .set('Authorization', `Bearer ${doctorToken}`)
+        .expect(HttpStatus.OK);
+
+      // Verify no waves exist
+      const wavesRes = await request(app.getHttpServer())
+        .get(`/doctor/${doctorProfileId}/waves`)
+        .query({ date: testDate })
+        .set('Authorization', `Bearer ${patient1Token}`)
+        .expect(HttpStatus.OK);
+
+      expect(wavesRes.body.length).toBe(0);
     });
   });
 });

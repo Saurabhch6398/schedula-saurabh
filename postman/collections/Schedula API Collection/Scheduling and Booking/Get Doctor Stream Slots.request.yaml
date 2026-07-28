@@ -1,0 +1,23 @@
+$kind: http-request
+url: "{{baseUrl}}/doctor/:id/slots?date=2030-08-20"
+method: GET
+pathVariables:
+  id: "1"
+queryParams:
+  date: "2030-08-20"
+auth:
+  type: bearer
+  credentials:
+    token: "{{jwtToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status code is 200", function () {
+          pm.response.to.have.status(200);
+      });
+      pm.test("Should return slots array", function () {
+          const response = pm.response.json();
+          pm.expect(response).to.be.an("array");
+      });
+    language: text/javascript
+order: 2000

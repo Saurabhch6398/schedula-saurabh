@@ -256,6 +256,23 @@ export class AvailabilityService {
   // Get all recurring for logged in doctor
   async getRecurring(userId: number) {
     const profile = await this.getDoctorProfile(userId);
+    if (profile.schedulingType === 'WAVE') {
+      const waveSchedules =
+        await this.availabilityRepo.findWaveSchedulesByDoctor(profile.id);
+      return waveSchedules.map((ws) => ({
+        id: ws.id,
+        startTime: this.minutesToTimeString(
+          ws.startTime.getUTCHours() * 60 + ws.startTime.getUTCMinutes(),
+        ),
+        endTime: this.minutesToTimeString(
+          ws.endTime.getUTCHours() * 60 + ws.endTime.getUTCMinutes(),
+        ),
+        maxCapacity: ws.maxCapacity,
+        date: ws.startTime.toISOString().split('T')[0],
+        isWave: true,
+      }));
+    }
+
     const slots = await this.availabilityRepo.findRecurringByDoctor(profile.id);
     return slots.map((s) => ({
       id: s.id,
@@ -273,68 +290,172 @@ export class AvailabilityService {
     dto: UpdateAvailabilityDto,
   ) {
     const profile = await this.getDoctorProfile(userId);
+
+    // Try finding in RecurringAvailability
     const slot = await this.availabilityRepo.findRecurringById(id);
+    if (slot) {
+      if (slot.doctorProfileId !== profile.id) {
+        throw new ForbiddenException('You do not have access to this slot');
+      }
 
-    if (!slot) {
-      throw new NotFoundException('Recurring availability slot not found');
+      const nextDay = dto.dayOfWeek?.toUpperCase() ?? slot.dayOfWeek;
+      const nextStartStr = dto.startTime ?? slot.startTime;
+      const nextEndStr = dto.endTime ?? slot.endTime;
+
+      const startMin = this.parseTimeToMinutes(nextStartStr);
+      const endMin = this.parseTimeToMinutes(nextEndStr);
+
+      if (startMin >= endMin) {
+        throw new BadRequestException('Start time must be before end time');
+      }
+
+      const formattedStart = this.minutesToTimeString(startMin);
+      const formattedEnd = this.minutesToTimeString(endMin);
+
+      // Overlap checks (excluding current slot)
+      const existing = await this.availabilityRepo.findRecurringByDoctorAndDay(
+        profile.id,
+        nextDay,
+      );
+      for (const item of existing) {
+        if (item.id === id) continue;
+
+        const slotStart = this.parseTimeToMinutes(item.startTime);
+        const slotEnd = this.parseTimeToMinutes(item.endTime);
+
+        if (startMin < slotEnd && endMin > slotStart) {
+          throw new ConflictException('Conflicting schedule');
+        }
+      }
+
+      await this.availabilityRepo.updateRecurring(id, {
+        dayOfWeek: nextDay,
+        startTime: formattedStart,
+        endTime: formattedEnd,
+      });
+
+      return { message: 'Availability updated successfully' };
     }
-    if (slot.doctorProfileId !== profile.id) {
-      throw new ForbiddenException('You do not have access to this slot');
-    }
 
-    const nextDay = dto.dayOfWeek?.toUpperCase() ?? slot.dayOfWeek;
-    const nextStartStr = dto.startTime ?? slot.startTime;
-    const nextEndStr = dto.endTime ?? slot.endTime;
+    // Try finding in WaveSchedule
+    const waveSlot = await this.prisma.waveSchedule.findUnique({
+      where: { id },
+    });
+    if (waveSlot) {
+      if (waveSlot.doctorProfileId !== profile.id) {
+        throw new ForbiddenException('You do not have access to this slot');
+      }
 
-    const startMin = this.parseTimeToMinutes(nextStartStr);
-    const endMin = this.parseTimeToMinutes(nextEndStr);
+      let startDt = waveSlot.startTime;
+      let endDt = waveSlot.endTime;
+      let maxCapacity = waveSlot.maxCapacity;
 
-    if (startMin >= endMin) {
-      throw new BadRequestException('Start time must be before end time');
-    }
+      if (dto.maxCapacity !== undefined && dto.maxCapacity !== null) {
+        if (dto.maxCapacity <= 0) {
+          throw new BadRequestException('Invalid capacity');
+        }
+        maxCapacity = dto.maxCapacity;
+      }
 
-    const formattedStart = this.minutesToTimeString(startMin);
-    const formattedEnd = this.minutesToTimeString(endMin);
+      const existingDate = waveSlot.startTime;
 
-    // Overlap checks (excluding current slot)
-    const existing = await this.availabilityRepo.findRecurringByDoctorAndDay(
-      profile.id,
-      nextDay,
-    );
-    for (const item of existing) {
-      if (item.id === id) continue;
+      if (dto.startTime || dto.endTime) {
+        const startStr =
+          dto.startTime ??
+          this.minutesToTimeString(
+            waveSlot.startTime.getUTCHours() * 60 +
+              waveSlot.startTime.getUTCMinutes(),
+          );
+        const endStr =
+          dto.endTime ??
+          this.minutesToTimeString(
+            waveSlot.endTime.getUTCHours() * 60 +
+              waveSlot.endTime.getUTCMinutes(),
+          );
 
-      const slotStart = this.parseTimeToMinutes(item.startTime);
-      const slotEnd = this.parseTimeToMinutes(item.endTime);
+        const startMin = this.parseTimeToMinutes(startStr);
+        const endMin = this.parseTimeToMinutes(endStr);
+        if (startMin >= endMin) {
+          throw new BadRequestException('Start time must be before end time');
+        }
 
-      if (startMin < slotEnd && endMin > slotStart) {
+        startDt = new Date(
+          Date.UTC(
+            existingDate.getUTCFullYear(),
+            existingDate.getUTCMonth(),
+            existingDate.getUTCDate(),
+            Math.floor(startMin / 60),
+            startMin % 60,
+          ),
+        );
+        endDt = new Date(
+          Date.UTC(
+            existingDate.getUTCFullYear(),
+            existingDate.getUTCMonth(),
+            existingDate.getUTCDate(),
+            Math.floor(endMin / 60),
+            endMin % 60,
+          ),
+        );
+      }
+
+      // Check overlap
+      const overlap = await this.prisma.waveSchedule.findFirst({
+        where: {
+          doctorProfileId: profile.id,
+          id: { not: id },
+          startTime: { lt: endDt },
+          endTime: { gt: startDt },
+        },
+      });
+      if (overlap) {
         throw new ConflictException('Conflicting schedule');
       }
+
+      await this.prisma.waveSchedule.update({
+        where: { id },
+        data: {
+          startTime: startDt,
+          endTime: endDt,
+          maxCapacity,
+        },
+      });
+
+      return { message: 'Availability updated successfully' };
     }
 
-    await this.availabilityRepo.updateRecurring(id, {
-      dayOfWeek: nextDay,
-      startTime: formattedStart,
-      endTime: formattedEnd,
-    });
-
-    return { message: 'Availability updated successfully' };
+    throw new NotFoundException('Availability slot not found');
   }
 
   // Delete Recurring
   async deleteRecurring(userId: number, id: number) {
     const profile = await this.getDoctorProfile(userId);
+
+    // Try deleting from RecurringAvailability
     const slot = await this.availabilityRepo.findRecurringById(id);
-
-    if (!slot) {
-      throw new NotFoundException('Recurring availability slot not found');
+    if (slot) {
+      if (slot.doctorProfileId !== profile.id) {
+        throw new ForbiddenException('You do not have access to this slot');
+      }
+      await this.availabilityRepo.deleteRecurring(id);
+      return { message: 'Availability deleted successfully' };
     }
-    if (slot.doctorProfileId !== profile.id) {
-      throw new ForbiddenException('You do not have access to this slot');
+
+    // Try deleting from WaveSchedule
+    const waveSlot = await this.prisma.waveSchedule.findUnique({
+      where: { id },
+    });
+    if (waveSlot) {
+      if (waveSlot.doctorProfileId !== profile.id) {
+        throw new ForbiddenException('You do not have access to this slot');
+      }
+      await this.prisma.waveSchedule.delete({
+        where: { id },
+      });
+      return { message: 'Availability deleted successfully' };
     }
 
-    await this.availabilityRepo.deleteRecurring(id);
-    return { message: 'Availability deleted successfully' };
+    throw new NotFoundException('Availability slot not found');
   }
 
   // Create Custom Override
@@ -564,6 +685,7 @@ export class AvailabilityService {
           gte: startOfDay,
           lte: endOfDay,
         },
+        status: 'BOOKED',
       },
     });
 
@@ -681,6 +803,7 @@ export class AvailabilityService {
       const bookedCount = await this.prisma.appointment.count({
         where: {
           waveScheduleId: wave.id,
+          status: 'BOOKED',
         },
       });
 

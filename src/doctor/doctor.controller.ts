@@ -18,6 +18,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { CreateDoctorProfileDto } from './dto/create-doctor-profile.dto';
 import { UpdateDoctorProfileDto } from './dto/update-doctor-profile.dto';
 import { SelectSchedulingDto } from './dto/select-scheduling.dto';
+import { AppointmentService } from '../appointment/appointment.service';
 
 interface RequestWithUser {
   user: {
@@ -33,6 +34,7 @@ export class DoctorController {
   constructor(
     private readonly doctorService: DoctorService,
     private readonly availabilityService: AvailabilityService,
+    private readonly appointmentService: AppointmentService,
   ) {}
 
   @Post('profile')
@@ -96,5 +98,31 @@ export class DoctorController {
       return this.availabilityService.getAvailabilityForDate(date, doctorId);
     }
     return this.availabilityService.getDoctorAllAvailability(doctorId);
+  }
+
+  @Get('appointments')
+  @Roles('DOCTOR')
+  async getDoctorAppointments(
+    @Request() req: RequestWithUser,
+    @Query('date') date?: string,
+    @Query('status') status?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('sort') sort?: string,
+  ) {
+    const data = await this.appointmentService.getDoctorAppointments(
+      req.user.userId,
+      {
+        date,
+        status,
+        page: page ? parseInt(page, 10) : undefined,
+        limit: limit ? parseInt(limit, 10) : undefined,
+        sort,
+      },
+    );
+    return {
+      success: true,
+      data,
+    };
   }
 }

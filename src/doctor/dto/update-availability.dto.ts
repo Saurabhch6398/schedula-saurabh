@@ -1,4 +1,4 @@
-import { IsString, IsIn, IsOptional } from 'class-validator';
+import { IsString, IsIn, IsOptional, IsInt } from 'class-validator';
 
 export class UpdateAvailabilityDto {
   @IsOptional()
@@ -24,4 +24,8 @@ export class UpdateAvailabilityDto {
   @IsOptional()
   @IsString()
   endTime?: string;
+
+  @IsOptional()
+  @IsInt({ message: 'maxCapacity must be an integer' })
+  maxCapacity?: number;
 }
