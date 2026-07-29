@@ -1,0 +1,28 @@
+$kind: http-request
+url: "{{baseUrl}}/appointments"
+method: POST
+body:
+  type: json
+  content: |-
+    {
+        "doctorId": 1,
+        "slot": "10:00",
+        "date": "2030-08-20"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{jwtToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status code is 201", function () {
+          pm.response.to.have.status(201);
+      });
+      pm.test("Appointment details correct", function () {
+          const response = pm.response.json();
+          pm.expect(response.appointmentType).to.equal("STREAM");
+          pm.expect(response.doctorId).to.equal(1);
+      });
+    language: text/javascript
+order: 4000

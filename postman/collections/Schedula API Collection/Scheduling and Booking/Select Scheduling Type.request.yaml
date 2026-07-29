@@ -1,0 +1,27 @@
+$kind: http-request
+url: "{{baseUrl}}/doctor/scheduling"
+method: PATCH
+body:
+  type: json
+  content: |-
+    {
+        "type": "STREAM",
+        "slotDuration": 15,
+        "bufferTime": 5
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{jwtToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status code is 200", function () {
+          pm.response.to.have.status(200);
+      });
+      pm.test("Scheduling update successful", function () {
+          const response = pm.response.json();
+          pm.expect(response.message).to.equal("Scheduling updated successfully");
+      });
+    language: text/javascript
+order: 1000

@@ -1,13 +1,21 @@
-import { IsNotEmpty, IsString, IsIn } from 'class-validator';
+import { IsNotEmpty, IsString, IsIn, IsOptional, IsInt } from 'class-validator';
 
 export class CreateAvailabilityDto {
-  @IsNotEmpty({ message: 'Day of week is required' })
+  @IsOptional()
   @IsString()
   @IsIn(
-    ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'],
+    [
+      'MONDAY',
+      'TUESDAY',
+      'WEDNESDAY',
+      'THURSDAY',
+      'FRIDAY',
+      'SATURDAY',
+      'SUNDAY',
+    ],
     { message: 'dayOfWeek must be a valid uppercase day of the week' },
   )
-  dayOfWeek: string;
+  dayOfWeek?: string;
 
   @IsNotEmpty({ message: 'Start time is required' })
   @IsString()
@@ -16,4 +24,12 @@ export class CreateAvailabilityDto {
   @IsNotEmpty({ message: 'End time is required' })
   @IsString()
   endTime: string;
+
+  @IsOptional()
+  @IsString()
+  date?: string;
+
+  @IsOptional()
+  @IsInt({ message: 'maxCapacity must be an integer' })
+  maxCapacity?: number;
 }

@@ -1,0 +1,30 @@
+$kind: http-request
+url: "{{baseUrl}}/doctor/profile"
+method: POST
+body:
+  type: json
+  content: |-
+    {
+        "fullName": "Illegal Access",
+        "specialization": "Cardiologist",
+        "experience": 8,
+        "qualification": "MBBS, MD",
+        "consultationFee": 1000,
+        "availability": "Mon-Fri 10AM-5PM"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{jwtToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status code is 403", function () {
+          pm.response.to.have.status(403);
+      });
+      pm.test("Access denied message", function () {
+          const response = pm.response.json();
+          pm.expect(response.message).to.equal("Access denied");
+      });
+    language: text/javascript
+order: 5000

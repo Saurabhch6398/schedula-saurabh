@@ -1,0 +1,11 @@
+# Use this workspace to collaborate
+workspace:
+  id: f0b18602-67d2-4b7a-89f2-aee5dfb87d34
+
+localResources:
+  collections:
+    - ../docs/Schedula.postman_collection.json
+
+cloudResources:
+  collections:
+    ../postman/collections/Schedula API Collection: 8062aa02-d0a6-4821-a2b8-5e2b3133def6

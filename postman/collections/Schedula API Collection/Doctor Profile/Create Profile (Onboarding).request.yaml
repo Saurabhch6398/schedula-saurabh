@@ -1,0 +1,31 @@
+$kind: http-request
+url: "{{baseUrl}}/doctor/profile"
+method: POST
+body:
+  type: json
+  content: |-
+    {
+        "fullName": "Dr. Rahul Sharma",
+        "specialization": "Cardiologist",
+        "experience": 8,
+        "qualification": "MBBS, MD",
+        "consultationFee": 1000,
+        "availability": "Mon-Fri 10AM-5PM",
+        "profileDetails": "Heart specialist with 8 years of experience."
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{jwtToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status code is 201", function () {
+          pm.response.to.have.status(201);
+      });
+      pm.test("Profile creation successful", function () {
+          const response = pm.response.json();
+          pm.expect(response.message).to.equal("Doctor profile created successfully");
+      });
+    language: text/javascript
+order: 2000

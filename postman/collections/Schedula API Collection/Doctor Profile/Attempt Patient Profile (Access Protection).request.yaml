@@ -1,0 +1,28 @@
+$kind: http-request
+url: "{{baseUrl}}/patient/profile"
+method: POST
+body:
+  type: json
+  content: |-
+    {
+        "fullName": "Illegal Access",
+        "age": 30,
+        "gender": "Male",
+        "contact": "9999999999"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{jwtToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status code is 403", function () {
+          pm.response.to.have.status(403);
+      });
+      pm.test("Access denied message", function () {
+          const response = pm.response.json();
+          pm.expect(response.message).to.equal("Access denied");
+      });
+    language: text/javascript
+order: 5000

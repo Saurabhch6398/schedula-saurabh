@@ -1,10 +1,26 @@
-import { Controller, Get, Post, Patch, Body, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Body,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { PatientService } from './patient.service';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CreatePatientProfileDto } from './dto/create-patient-profile.dto';
 import { UpdatePatientProfileDto } from './dto/update-patient-profile.dto';
+
+interface RequestWithUser {
+  user: {
+    userId: number;
+    email: string;
+    role: string;
+  };
+}
 
 @Controller('patient')
 @UseGuards(AuthGuard, RolesGuard)
@@ -13,19 +29,25 @@ export class PatientController {
 
   @Post('profile')
   @Roles('PATIENT')
-  async createProfile(@Request() req, @Body() dto: CreatePatientProfileDto) {
+  async createProfile(
+    @Request() req: RequestWithUser,
+    @Body() dto: CreatePatientProfileDto,
+  ) {
     return this.patientService.createProfile(req.user.userId, dto);
   }
 
   @Get('profile')
   @Roles('PATIENT')
-  async getProfile(@Request() req) {
+  async getProfile(@Request() req: RequestWithUser) {
     return this.patientService.getProfile(req.user.userId);
   }
 
   @Patch('profile')
   @Roles('PATIENT')
-  async updateProfile(@Request() req, @Body() dto: UpdatePatientProfileDto) {
+  async updateProfile(
+    @Request() req: RequestWithUser,
+    @Body() dto: UpdatePatientProfileDto,
+  ) {
     return this.patientService.updateProfile(req.user.userId, dto);
   }
 }

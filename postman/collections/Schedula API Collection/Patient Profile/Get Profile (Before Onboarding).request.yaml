@@ -1,0 +1,19 @@
+$kind: http-request
+url: "{{baseUrl}}/patient/profile"
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{jwtToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status code is 404", function () {
+          pm.response.to.have.status(404);
+      });
+      pm.test("Profile not found message", function () {
+          const response = pm.response.json();
+          pm.expect(response.message).to.equal("Profile not found");
+      });
+    language: text/javascript
+order: 1000

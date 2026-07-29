@@ -1,0 +1,18 @@
+$kind: http-request
+url: "{{baseUrl}}/doctor/availability/date?date=2026-06-15&doctorId=1"
+method: GET
+queryParams:
+  date: 2026-06-15
+  doctorId: "1"
+auth:
+  type: bearer
+  credentials:
+    token: "{{jwtToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status code is 200", function () {
+          pm.response.to.have.status(200);
+      });
+    language: text/javascript
+order: 7000

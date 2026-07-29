@@ -40,6 +40,12 @@ model DoctorProfile {
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   recurringAvailabilities RecurringAvailability[]
   customAvailabilities    CustomAvailability[]
+  waveSchedules          WaveSchedule[]
+  appointments           Appointment[]
+
+  schedulingType  SchedulingType @default(STREAM) @map("scheduling_type")
+  slotDuration    Int?           @map("slot_duration")
+  bufferTime      Int?           @default(0) @map("buffer_time")
 
   @@map("doctor_profiles")
 }
@@ -85,6 +91,67 @@ model PatientProfile {
   updatedAt  DateTime @updatedAt @map("updated_at")
 
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
 
   @@map("patient_profiles")
 }
+
+enum SchedulingType {
+  STREAM
+  WAVE
+}
+
+enum AppointmentType {
+  STREAM
+  WAVE
+}
+
+model WaveSchedule {
+  id              Int           @id @default(autoincrement())
+  doctorProfileId Int           @map("doctor_profile_id")
+  startTime       DateTime      @map("start_time")
+  endTime         DateTime      @map("end_time")
+  maxCapacity     Int           @map("max_capacity")
+  createdAt       DateTime      @default(now()) @map("created_at")
+
+  doctorProfile   DoctorProfile @relation(fields: [doctorProfileId], references: [id], onDelete: Cascade)
+  appointments    Appointment[]
+
+  @@map("wave_schedules")
+}
+
+enum AppointmentStatus {
+  BOOKED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+model Appointment {
+  id               Int             @id @default(autoincrement())
+  doctorProfileId  Int             @map("doctor_profile_id")
+  patientProfileId Int             @map("patient_profile_id")
+  appointmentType  AppointmentType @map("appointment_type")
+  slotStart        DateTime?       @map("slot_start")
+  slotEnd          DateTime?       @map("slot_end")
+  tokenNumber      Int?            @map("token_number")
+  waveScheduleId   Int?            @map("wave_schedule_id")
+  createdAt        DateTime        @default(now()) @map("created_at")
+  updatedAt        DateTime        @updatedAt @map("updated_at")
+
+  status             AppointmentStatus @default(BOOKED)
+  bookingSource      String            @default("ONLINE") @map("booking_source")
+  cancellationReason String?           @map("cancellation_reason")
+  cancelledAt        DateTime?         @map("cancelled_at")
+
+  diagnosis    String?
+  prescription String?
+  followUp     String? @map("follow_up")
+
+  doctorProfile    DoctorProfile   @relation(fields: [doctorProfileId], references: [id], onDelete: Cascade)
+  patientProfile   PatientProfile  @relation(fields: [patientProfileId], references: [id], onDelete: Cascade)
+  waveSchedule     WaveSchedule?   @relation(fields: [waveScheduleId], references: [id], onDelete: Cascade)
+
+  @@map("appointments")
+}
+

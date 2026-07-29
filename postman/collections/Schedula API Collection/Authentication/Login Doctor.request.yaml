@@ -1,0 +1,24 @@
+$kind: http-request
+url: "{{baseUrl}}/login"
+method: POST
+body:
+  type: json
+  content: |-
+    {
+        "email": "rahul.sharma@example.com",
+        "password": "password123"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status code is 200", function () {
+          pm.response.to.have.status(200);
+      });
+      pm.test("Login Successful and Token Saved", function () {
+          const response = pm.response.json();
+          pm.expect(response.message).to.equal("Login Successful");
+          pm.expect(response.token).to.not.be.undefined;
+          pm.collectionVariables.set("jwtToken", response.token);
+      });
+    language: text/javascript
+order: 3000

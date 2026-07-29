@@ -1,0 +1,29 @@
+$kind: http-request
+url: "{{baseUrl}}/patient/profile"
+method: POST
+body:
+  type: json
+  content: |-
+    {
+        "fullName": "Amit Kumar",
+        "age": 24,
+        "gender": "Male",
+        "contact": "9876543210",
+        "healthInfo": "Diabetic"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{jwtToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status code is 201", function () {
+          pm.response.to.have.status(201);
+      });
+      pm.test("Profile creation successful", function () {
+          const response = pm.response.json();
+          pm.expect(response.message).to.equal("Patient profile created successfully");
+      });
+    language: text/javascript
+order: 2000

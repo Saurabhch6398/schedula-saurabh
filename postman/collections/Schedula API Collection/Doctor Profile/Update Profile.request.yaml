@@ -1,0 +1,26 @@
+$kind: http-request
+url: "{{baseUrl}}/doctor/profile"
+method: PATCH
+body:
+  type: json
+  content: |-
+    {
+        "consultationFee": 1200,
+        "availability": "9AM-3PM"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{jwtToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status code is 200", function () {
+          pm.response.to.have.status(200);
+      });
+      pm.test("Update success check", function () {
+          const response = pm.response.json();
+          pm.expect(response.message).to.equal("Doctor profile updated successfully");
+      });
+    language: text/javascript
+order: 4000

@@ -1,0 +1,804 @@
+{
+  "info": {
+    "_postman_id": "893c5c93-9c87-4db3-8f0a-6e6ad9d2f099",
+    "name": "Schedula Appointment & Management System",
+    "description": "Comprehensive Postman collection for testing the Schedula Doctor Appointment Booking and Management System endpoints.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Doctor Signup",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Dr. Bruce Banner\",\n  \"email\": \"doctor.banner@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"DOCTOR\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/signup",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "signup"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Patient Signup",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Tony Stark\",\n  \"email\": \"tony.stark@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"PATIENT\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/signup",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "signup"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const responseJson = pm.response.json();",
+                  "if (responseJson.token) {",
+                  "    pm.globals.set(\"token\", responseJson.token);",
+                  "    console.log(\"Authorization Token updated globally!\");",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"doctor.banner@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "login"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Profiles & Scheduling Setup (Doctor)",
+      "item": [
+        {
+          "name": "Create/Update Doctor Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Dr. Bruce Banner\",\n  \"specialization\": \"Gamma Radiation & Endocrinology\",\n  \"experience\": 12,\n  \"qualification\": \"M.D., Ph.D.\",\n  \"consultationFee\": 350,\n  \"availability\": \"Mon-Fri 9AM-5PM\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/doctor/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctor",
+                "profile"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Doctor Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/doctor/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctor",
+                "profile"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Select Scheduling Type (STREAM)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"STREAM\",\n  \"slotDuration\": 15,\n  \"bufferTime\": 5\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/doctor/scheduling",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctor",
+                "scheduling"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Select Scheduling Type (WAVE)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"WAVE\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/doctor/scheduling",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctor",
+                "scheduling"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Availability Window (STREAM/WAVE)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dayOfWeek\": \"TUESDAY\",\n  \"startTime\": \"10:00\",\n  \"endTime\": \"12:00\",\n  \"maxCapacity\": 5\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/doctor/availability",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctor",
+                "availability"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Doctor Availability (Doctor View)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/doctor/availability",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctor",
+                "availability"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Profiles & Booking (Patient)",
+      "item": [
+        {
+          "name": "Create/Update Patient Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Tony Stark\",\n  \"age\": 45,\n  \"gender\": \"Male\",\n  \"contact\": \"9998887776\",\n  \"healthInfo\": \"Heart reactor implant\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/patient/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "patient",
+                "profile"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "View Doctor Slots (Patient view)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/doctor/:doctorId/slots?date=2026-09-20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctor",
+                ":doctorId",
+                "slots"
+              ],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "2026-09-20"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "doctorId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Book Appointment (STREAM)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"doctorId\": 1,\n  \"date\": \"2026-09-20\",\n  \"startTime\": \"10:00\",\n  \"endTime\": \"10:15\",\n  \"bookingSource\": \"ONLINE\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/appointment",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointment"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Book Appointment (WAVE)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"doctorId\": 1,\n  \"waveId\": 1,\n  \"bookingSource\": \"ONLINE\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/appointment",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointment"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Appointments (All)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/appointment/my",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointment",
+                "my"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Appointments (Upcoming)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/appointment/upcoming",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointment",
+                "upcoming"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Appointments (History)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/appointment/history",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointment",
+                "history"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reschedule Appointment",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2026-09-20\",\n  \"startTime\": \"11:00\",\n  \"endTime\": \"11:15\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/appointment/:id/reschedule",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointment",
+                ":id",
+                "reschedule"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Appointment",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cancellationReason\": \"Scheduling conflict\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/appointment/:id/cancel",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointment",
+                ":id",
+                "cancel"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Doctor Management & Complete Notes",
+      "item": [
+        {
+          "name": "Get Doctor Appointments (Filtered/Paginated)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/doctor/appointments?date=2026-09-20&status=BOOKED&page=1&limit=10&sort=date",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctor",
+                "appointments"
+              ],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "2026-09-20"
+                },
+                {
+                  "key": "status",
+                  "value": "BOOKED"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "sort",
+                  "value": "date"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Appointment Details",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/appointment/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointment",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Complete Appointment (With Notes)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"diagnosis\": \"Elevated heart rate & minor radiation fatigue\",\n  \"prescription\": \"Take rest, consume extra hydration, avoid stressful workloads\",\n  \"followUp\": \"Return for observation in two weeks\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/appointment/:id/complete",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointment",
+                ":id",
+                "complete"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
+  ]
+}

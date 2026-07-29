@@ -1,0 +1,23 @@
+$kind: http-request
+url: "{{baseUrl}}/doctor/availability/override"
+method: POST
+body:
+  type: json
+  content: |-
+    {
+        "date": "2026-06-15",
+        "startTime": "02:00 PM",
+        "endTime": "03:00 PM"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{jwtToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status code is 201", function () {
+          pm.response.to.have.status(201);
+      });
+    language: text/javascript
+order: 5000

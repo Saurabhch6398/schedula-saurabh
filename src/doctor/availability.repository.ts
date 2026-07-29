@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { CustomAvailability } from '@prisma/client';
 
 @Injectable()
 export class AvailabilityRepository {
@@ -17,7 +18,10 @@ export class AvailabilityRepository {
     });
   }
 
-  async findRecurringByDoctorAndDay(doctorProfileId: number, dayOfWeek: string) {
+  async findRecurringByDoctorAndDay(
+    doctorProfileId: number,
+    dayOfWeek: string,
+  ) {
     return this.prisma.recurringAvailability.findMany({
       where: {
         doctorProfileId,
@@ -42,7 +46,12 @@ export class AvailabilityRepository {
     });
   }
 
-  async createRecurring(doctorProfileId: number, dayOfWeek: string, startTime: string, endTime: string) {
+  async createRecurring(
+    doctorProfileId: number,
+    dayOfWeek: string,
+    startTime: string,
+    endTime: string,
+  ) {
     return this.prisma.recurringAvailability.create({
       data: {
         doctorProfileId,
@@ -53,7 +62,10 @@ export class AvailabilityRepository {
     });
   }
 
-  async updateRecurring(id: number, data: { dayOfWeek?: string; startTime?: string; endTime?: string }) {
+  async updateRecurring(
+    id: number,
+    data: { dayOfWeek?: string; startTime?: string; endTime?: string },
+  ) {
     return this.prisma.recurringAvailability.update({
       where: { id },
       data,
@@ -91,7 +103,8 @@ export class AvailabilityRepository {
       });
 
       // 2. Insert new overrides
-      const created: any[] = [];
+      const created: CustomAvailability[] = [];
+
       for (const slot of slots) {
         const item = await tx.customAvailability.create({
           data: {
@@ -113,6 +126,49 @@ export class AvailabilityRepository {
       where: {
         doctorProfileId,
         date,
+      },
+    });
+  }
+
+  async findWaveScheduleById(id: number) {
+    return this.prisma.waveSchedule.findUnique({
+      where: { id },
+    });
+  }
+
+  async findWaveSchedulesByDoctor(doctorProfileId: number) {
+    return this.prisma.waveSchedule.findMany({
+      where: { doctorProfileId },
+      orderBy: { startTime: 'asc' },
+    });
+  }
+
+  async createWaveSchedule(
+    doctorProfileId: number,
+    startTime: Date,
+    endTime: Date,
+    maxCapacity: number,
+  ) {
+    return this.prisma.waveSchedule.create({
+      data: {
+        doctorProfileId,
+        startTime,
+        endTime,
+        maxCapacity,
+      },
+    });
+  }
+
+  async checkWaveOverlap(
+    doctorProfileId: number,
+    startTime: Date,
+    endTime: Date,
+  ) {
+    return this.prisma.waveSchedule.findFirst({
+      where: {
+        doctorProfileId,
+        startTime: { lt: endTime },
+        endTime: { gt: startTime },
       },
     });
   }
