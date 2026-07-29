@@ -1,0 +1,729 @@
+{
+	"info": {
+		"_postman_id": "a988d578-8316-4a47-bc97-e8f0a06ef8be",
+		"name": "Schedula API Collection",
+		"description": "API collection for Schedula API endpoints (Auth, Doctor Onboarding, Patient Onboarding)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Root Hello World",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						""
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"pm.test(\"Response is Hello World!\", function () {",
+							"    pm.expect(pm.response.text()).to.equal(\"Hello World!\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			]
+		},
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Signup Doctor",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Dr. Rahul Sharma\",\n    \"email\": \"rahul.sharma@example.com\",\n    \"password\": \"password123\",\n    \"role\": \"DOCTOR\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/signup",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"signup"
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201 or 409\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([201, 409]);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Signup Patient",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Amit Kumar\",\n    \"email\": \"amit.kumar@example.com\",\n    \"password\": \"password123\",\n    \"role\": \"PATIENT\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/signup",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"signup"
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201 or 409\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([201, 409]);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Login Doctor",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"rahul.sharma@example.com\",\n    \"password\": \"password123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"login"
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Login Successful and Token Saved\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.message).to.equal(\"Login Successful\");",
+									"    pm.expect(response.token).to.not.be.undefined;",
+									"    pm.collectionVariables.set(\"jwtToken\", response.token);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Login Patient",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"amit.kumar@example.com\",\n    \"password\": \"password123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"login"
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Login Successful and Token Saved\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.message).to.equal(\"Login Successful\");",
+									"    pm.expect(response.token).to.not.be.undefined;",
+									"    pm.collectionVariables.set(\"jwtToken\", response.token);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Doctor Profile",
+			"item": [
+				{
+					"name": "Get Profile (Before Onboarding)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/doctor/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"doctor",
+								"profile"
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 404\", function () {",
+									"    pm.response.to.have.status(404);",
+									"});",
+									"pm.test(\"Profile not found message\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.message).to.equal(\"Profile not found\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Create Profile (Onboarding)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"fullName\": \"Dr. Rahul Sharma\",\n    \"specialization\": \"Cardiologist\",\n    \"experience\": 8,\n    \"qualification\": \"MBBS, MD\",\n    \"consultationFee\": 1000,\n    \"availability\": \"Mon-Fri 10AM-5PM\",\n    \"profileDetails\": \"Heart specialist with 8 years of experience.\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/doctor/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"doctor",
+								"profile"
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"pm.test(\"Profile creation successful\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.message).to.equal(\"Doctor profile created successfully\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Get Profile (After Onboarding)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/doctor/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"doctor",
+								"profile"
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Check profile properties\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.fullName).to.equal(\"Dr. Rahul Sharma\");",
+									"    pm.expect(response.specialization).to.equal(\"Cardiologist\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Update Profile",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"consultationFee\": 1200,\n    \"availability\": \"9AM-3PM\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/doctor/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"doctor",
+								"profile"
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Update success check\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.message).to.equal(\"Doctor profile updated successfully\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Attempt Patient Profile (Access Protection)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"fullName\": \"Illegal Access\",\n    \"age\": 30,\n    \"gender\": \"Male\",\n    \"contact\": \"9999999999\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/patient/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"patient",
+								"profile"
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 403\", function () {",
+									"    pm.response.to.have.status(403);",
+									"});",
+									"pm.test(\"Access denied message\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.message).to.equal(\"Access denied\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Patient Profile",
+			"item": [
+				{
+					"name": "Get Profile (Before Onboarding)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/patient/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"patient",
+								"profile"
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 404\", function () {",
+									"    pm.response.to.have.status(404);",
+									"});",
+									"pm.test(\"Profile not found message\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.message).to.equal(\"Profile not found\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Create Profile (Onboarding)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"fullName\": \"Amit Kumar\",\n    \"age\": 24,\n    \"gender\": \"Male\",\n    \"contact\": \"9876543210\",\n    \"healthInfo\": \"Diabetic\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/patient/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"patient",
+								"profile"
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"pm.test(\"Profile creation successful\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.message).to.equal(\"Patient profile created successfully\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Get Profile (After Onboarding)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/patient/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"patient",
+								"profile"
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Check profile properties\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.fullName).to.equal(\"Amit Kumar\");",
+									"    pm.expect(response.age).to.equal(24);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Update Profile",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"healthInfo\": \"Diabetic, under treatment\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/patient/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"patient",
+								"profile"
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Update success check\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.message).to.equal(\"Patient profile updated successfully\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Attempt Doctor Profile (Access Protection)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"fullName\": \"Illegal Access\",\n    \"specialization\": \"Cardiologist\",\n    \"experience\": 8,\n    \"qualification\": \"MBBS, MD\",\n    \"consultationFee\": 1000,\n    \"availability\": \"Mon-Fri 10AM-5PM\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/doctor/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"doctor",
+								"profile"
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 403\", function () {",
+									"    pm.response.to.have.status(403);",
+									"});",
+									"pm.test(\"Access denied message\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.message).to.equal(\"Access denied\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "jwtToken",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
