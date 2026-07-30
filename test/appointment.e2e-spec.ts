@@ -312,6 +312,102 @@ describe('Appointment Booking & Management System (e2e)', () => {
         new Date(details.body.data.slotStart as string).getUTCHours(),
       ).toBe(11);
     });
+
+    it('should allow booking and rescheduling using unified slotId, newSlotId and newDate fields', async () => {
+      // 1. Book a stream appointment using slotId
+      const bookRes = await request(app.getHttpServer())
+        .post('/appointment')
+        .set('Authorization', `Bearer ${patientToken}`)
+        .send({
+          doctorId: doctorProfileId,
+          date: testDate,
+          slotId: '13:00-13:15',
+        })
+        .expect(HttpStatus.CREATED);
+
+      expect(bookRes.body.success).toBe(true);
+      expect(bookRes.body.data.status).toBe('BOOKED');
+      const bookedAppId = bookRes.body.data.id;
+
+      // 2. Reschedule it using newSlotId and newDate
+      const rescheduleRes = await request(app.getHttpServer())
+        .patch(`/appointment/${bookedAppId}/reschedule`)
+        .set('Authorization', `Bearer ${patientToken}`)
+        .send({
+          newDate: testDate,
+          newSlotId: '14:00-14:15',
+        })
+        .expect(HttpStatus.OK);
+
+      expect(rescheduleRes.body.success).toBe(true);
+      expect(rescheduleRes.body.message).toBe(
+        'Appointment rescheduled successfully',
+      );
+      expect(rescheduleRes.body.data.slotStart).toContain('T14:00:00.000Z');
+    });
+
+    it('should reject rescheduling an appointment owned by another patient', async () => {
+      await request(app.getHttpServer())
+        .patch(`/appointment/${appointmentId}/reschedule`)
+        .set('Authorization', `Bearer ${anotherPatientToken}`)
+        .send({
+          date: testDate,
+          startTime: '11:00',
+          endTime: '11:15',
+        })
+        .expect(HttpStatus.FORBIDDEN);
+    });
+
+    it('should reject rescheduling to an already booked slot', async () => {
+      // 1. Another patient books 11:20 - 11:35
+      await request(app.getHttpServer())
+        .post('/appointment')
+        .set('Authorization', `Bearer ${anotherPatientToken}`)
+        .send({
+          doctorId: doctorProfileId,
+          date: testDate,
+          startTime: '11:20',
+          endTime: '11:35',
+        })
+        .expect(HttpStatus.CREATED);
+
+      // 2. Patient 1 tries to reschedule their appointment to 11:20 - 11:35
+      const res = await request(app.getHttpServer())
+        .patch(`/appointment/${appointmentId}/reschedule`)
+        .set('Authorization', `Bearer ${patientToken}`)
+        .send({
+          date: testDate,
+          startTime: '11:20',
+          endTime: '11:35',
+        })
+        .expect(HttpStatus.CONFLICT);
+
+      expect(res.body.message).toContain('already booked');
+    });
+
+    it('should reject rescheduling to a slot outside doctor availability', async () => {
+      await request(app.getHttpServer())
+        .patch(`/appointment/${appointmentId}/reschedule`)
+        .set('Authorization', `Bearer ${patientToken}`)
+        .send({
+          date: testDate,
+          startTime: '08:00', // doctor starts at 10:00
+          endTime: '08:15',
+        })
+        .expect(HttpStatus.BAD_REQUEST);
+    });
+
+    it('should reject rescheduling to a past date or within 30-minute buffer', async () => {
+      await request(app.getHttpServer())
+        .patch(`/appointment/${appointmentId}/reschedule`)
+        .set('Authorization', `Bearer ${patientToken}`)
+        .send({
+          date: '2020-01-01',
+          startTime: '11:00',
+          endTime: '11:15',
+        })
+        .expect(HttpStatus.BAD_REQUEST);
+    });
   });
 
   describe('3. Doctor Views & Complete Notes', () => {

@@ -1,13 +1,25 @@
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 
 export class RescheduleAppointmentDto {
-  @IsNotEmpty({ message: 'Date is required' })
+  @IsOptional()
   @IsString()
-  date: string;
+  date?: string;
+
+  @IsOptional()
+  @IsString()
+  newDate?: string;
 
   @IsOptional()
   @IsString()
   slot?: string;
+
+  @IsOptional()
+  @IsString()
+  slotId?: string;
+
+  @IsOptional()
+  @IsString()
+  newSlotId?: string;
 
   @IsOptional()
   @IsString()
@@ -16,4 +28,7 @@ export class RescheduleAppointmentDto {
   @IsOptional()
   @IsString()
   endTime?: string;
+
+  @IsOptional()
+  waveId?: number;
 }

@@ -1,32 +1,43 @@
-Day 5 Submission – Backend Internship
+Day 9 Submission – Backend Internship
  
-Name: Saurabh Chauhan
+Name: Devansh Negi
  
 Task:
-Advanced Doctor Scheduling System (STREAM & WAVE Scheduling)
+Backend Application Deployment
  
 Repository:
-GitHub - Saurabhch6398/schedula-saurabh
+GitHub - devanshnegi88/schedula-Devansh
  
 Branch:
-feature/advanced-scheduling
+feature/backend-deployment
  
 Pull Request:
-Feature/advanced scheduling by Saurabhch6398 · Pull Request #7 · Saurabhch6398/schedula-saurabh
-https://github.com/Saurabhch6398/schedula-saurabh/pull/7
+feat: deployed backend application to production by devanshnegi88 · Pull Request #8 · devanshnegi88/schedula-Devansh
+https://github.com/devanshnegi88/schedula-Devansh/pull/8
+ 
+Live Backend URL:
+https://schedula-devansh-1.onrender.com/
  
 Loom Video:
-https://www.loom.com/share/2e96d6233651401281b6b388d562227d
+https://www.loom.com/share/0a5f5cbab4224aba9db796d0093a12ab
  
 Deliverables Completed:
-✅ Scheduling type selection
-✅ Stream scheduling implemented
-✅ Wave scheduling implemented
-✅ Token number assignment
-✅ Capacity handling
-✅ Edge cases handled
-✅ Flow chart added
-✅ Migration files used
-✅ API tested
-✅ Loom video recorded
-✅ Pull Request raised
+✅ Backend Application Deployed Successfully
+✅ Public Backend URL Accessible
+✅ Production Environment Variables Configured (DATABASE_URL, JWT_SECRET, PORT)
+✅ Hosted PostgreSQL Database Connected (Supabase)
+✅ Production Database Connection Configured Using TypeORM
+✅ Automatic Deployment via GitHub & Render
+✅ CORS Configuration Verified
+✅ Production Build Configured Successfully
+✅ Database Connectivity Verified
+✅ Deployed APIs Tested Successfully Using Postman
+✅ Authentication APIs Verified (Register/Login)
+✅ Doctor Profile APIs Verified
+✅ Patient Profile APIs Verified
+✅ Doctor Availability APIs Verified (STREAM & WAVE)
+✅ Appointment Booking & Management APIs Verified
+✅ Available Slots API Verified
+✅ Deployment Issues Resolved (Environment Variables, Build, Database Connection)
+✅ Loom Deployment Demo Recorded
+✅ Pull Request Raised
