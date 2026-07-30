@@ -103,11 +103,19 @@ export class AppointmentService {
     const bufferTimeMs = 30 * 60 * 1000; // 30 minutes booking buffer
 
     if (doctorProfile.schedulingType === 'STREAM') {
-      const startTimeStr = dto.slot ?? dto.startTime;
+      let startTimeStr = dto.slotId ?? dto.slot ?? dto.startTime;
+      let endTimeStr = dto.endTime;
+
       if (!startTimeStr) {
         throw new BadRequestException(
-          'slot or startTime is required for STREAM scheduling',
+          'slotId, slot, or startTime is required for STREAM scheduling',
         );
+      }
+
+      if (startTimeStr.includes('-')) {
+        const parts = startTimeStr.split('-');
+        startTimeStr = parts[0];
+        endTimeStr = parts[1];
       }
 
       const dateStr = dto.date ?? new Date().toISOString().split('T')[0];
@@ -122,8 +130,8 @@ export class AppointmentService {
         throw new BadRequestException('Invalid slot duration');
       }
       let endMin = startMin + slotDuration;
-      if (dto.endTime) {
-        endMin = this.parseTimeToMinutes(dto.endTime);
+      if (endTimeStr) {
+        endMin = this.parseTimeToMinutes(endTimeStr);
         if (endMin - startMin !== slotDuration) {
           throw new BadRequestException(
             'Booking duration does not match doctor slot duration',
@@ -278,13 +286,16 @@ export class AppointmentService {
       };
     } else {
       // WAVE scheduling
-      if (!dto.waveId) {
-        throw new BadRequestException('waveId is required for WAVE scheduling');
+      const targetWaveId = dto.slotId ?? dto.waveId;
+      if (!targetWaveId) {
+        throw new BadRequestException(
+          'slotId or waveId is required for WAVE scheduling',
+        );
       }
 
-      const waveId = Number(dto.waveId);
+      const waveId = Number(targetWaveId);
       if (isNaN(waveId)) {
-        throw new BadRequestException('Invalid waveId');
+        throw new BadRequestException('Invalid slotId or waveId');
       }
 
       const waveSchedule = await this.prisma.waveSchedule.findUnique({
@@ -449,7 +460,14 @@ export class AppointmentService {
       },
     });
 
-    return updated;
+    return {
+      id: updated.id,
+      doctorId: updated.doctorProfileId,
+      patientId: updated.patientProfileId,
+      status: updated.status,
+      cancellationReason: updated.cancellationReason,
+      cancelledAt: updated.cancelledAt?.toISOString(),
+    };
   }
 
   // Reschedule appointment
@@ -487,12 +505,26 @@ export class AppointmentService {
       throw new BadRequestException('Past appointments cannot be rescheduled');
     }
 
+    const targetDate = dto.newDate ?? dto.date;
+    const targetSlotId = dto.newSlotId ?? dto.slotId ?? dto.slot;
+
     if (app.appointmentType === 'STREAM') {
-      const startTimeStr = dto.slot ?? dto.startTime;
+      if (!targetDate) {
+        throw new BadRequestException('date is required');
+      }
+      let startTimeStr = targetSlotId ?? dto.startTime;
+      let endTimeStr = dto.endTime;
       if (!startTimeStr) {
         throw new BadRequestException('slot or startTime is required');
       }
-      const [year, month, day] = dto.date.split('-').map(Number);
+
+      if (startTimeStr.includes('-')) {
+        const parts = startTimeStr.split('-');
+        startTimeStr = parts[0];
+        endTimeStr = parts[1];
+      }
+
+      const [year, month, day] = targetDate.split('-').map(Number);
       if (isNaN(year) || isNaN(month) || isNaN(day)) {
         throw new BadRequestException('Invalid date format. Use YYYY-MM-DD');
       }
@@ -503,8 +535,8 @@ export class AppointmentService {
         throw new BadRequestException('Invalid slot duration');
       }
       let endMin = startMin + slotDuration;
-      if (dto.endTime) {
-        endMin = this.parseTimeToMinutes(dto.endTime);
+      if (endTimeStr) {
+        endMin = this.parseTimeToMinutes(endTimeStr);
         if (endMin - startMin !== slotDuration) {
           throw new BadRequestException(
             'Booking duration does not match doctor slot duration',
@@ -525,11 +557,45 @@ export class AppointmentService {
         Date.UTC(year, month - 1, day, Math.floor(endMin / 60), endMin % 60),
       );
 
+      // Same date & time check
+      if (
+        app.slotStart &&
+        app.slotStart.getTime() === slotStartDt.getTime() &&
+        app.slotEnd &&
+        app.slotEnd.getTime() === slotEndDt.getTime()
+      ) {
+        throw new BadRequestException(
+          'Appointment is already scheduled for this date and time',
+        );
+      }
+
       // Future check + 30-minute buffer
       const bufferTimeMs = 30 * 60 * 1000;
       if (slotStartDt.getTime() < now + bufferTimeMs) {
         throw new BadRequestException(
           'Cannot reschedule to the past or within 30-minute buffer',
+        );
+      }
+
+      // Daily Booking Limit check for target date
+      const startOfDay = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
+      const endOfDay = new Date(
+        Date.UTC(year, month - 1, day, 23, 59, 59, 999),
+      );
+      const dailyCount = await this.prisma.appointment.count({
+        where: {
+          doctorProfileId: app.doctorProfile.id,
+          status: 'BOOKED',
+          slotStart: {
+            gte: startOfDay,
+            lte: endOfDay,
+          },
+          id: { not: appointmentId },
+        },
+      });
+      if (dailyCount >= 20) {
+        throw new BadRequestException(
+          'Doctor is fully booked for this date (daily booking limit reached)',
         );
       }
 
@@ -610,11 +676,131 @@ export class AppointmentService {
         },
       });
 
-      return updated;
+      return {
+        id: updated.id,
+        doctorId: app.doctorProfile.id,
+        patientId: app.patientProfile.id,
+        slotStart: updated.slotStart!.toISOString(),
+        slotEnd: updated.slotEnd!.toISOString(),
+        appointmentType: 'STREAM',
+        status: updated.status,
+      };
     } else {
-      throw new BadRequestException(
-        'Rescheduling is only supported for STREAM appointments',
+      // WAVE scheduling rescheduling
+      const targetWaveId = targetSlotId ?? dto.waveId;
+      if (!targetWaveId) {
+        throw new BadRequestException(
+          'slotId or waveId is required for WAVE rescheduling',
+        );
+      }
+
+      const waveId = Number(targetWaveId);
+      if (isNaN(waveId)) {
+        throw new BadRequestException('Invalid slotId or waveId');
+      }
+
+      const waveSchedule = await this.prisma.waveSchedule.findUnique({
+        where: { id: waveId },
+      });
+
+      if (!waveSchedule) {
+        throw new NotFoundException('Wave schedule not found');
+      }
+
+      if (waveSchedule.doctorProfileId !== app.doctorProfile.id) {
+        throw new BadRequestException(
+          'Wave schedule does not belong to this doctor',
+        );
+      }
+
+      // Same wave check
+      if (app.waveScheduleId === waveSchedule.id) {
+        throw new BadRequestException(
+          'Appointment is already scheduled for this wave',
+        );
+      }
+
+      // Future check + 30-minute buffer
+      const bufferTimeMs = 30 * 60 * 1000;
+      if (waveSchedule.startTime.getTime() < now + bufferTimeMs) {
+        throw new BadRequestException(
+          'Cannot reschedule to the past or within 30-minute buffer',
+        );
+      }
+
+      // Daily limit check on target date
+      const dateObj = waveSchedule.startTime;
+      const startOfDay = new Date(
+        Date.UTC(
+          dateObj.getUTCFullYear(),
+          dateObj.getUTCMonth(),
+          dateObj.getUTCDate(),
+          0,
+          0,
+          0,
+        ),
       );
+      const endOfDay = new Date(
+        Date.UTC(
+          dateObj.getUTCFullYear(),
+          dateObj.getUTCMonth(),
+          dateObj.getUTCDate(),
+          23,
+          59,
+          59,
+          999,
+        ),
+      );
+      const dailyCount = await this.prisma.appointment.count({
+        where: {
+          doctorProfileId: app.doctorProfile.id,
+          status: 'BOOKED',
+          slotStart: {
+            gte: startOfDay,
+            lte: endOfDay,
+          },
+          id: { not: appointmentId },
+        },
+      });
+      if (dailyCount >= 20) {
+        throw new BadRequestException(
+          'Doctor is fully booked for this date (daily booking limit reached)',
+        );
+      }
+
+      // Capacity check
+      const count = await this.prisma.appointment.count({
+        where: { waveScheduleId: waveSchedule.id, status: 'BOOKED' },
+      });
+
+      if (count >= waveSchedule.maxCapacity) {
+        throw new ConflictException('Wave Full');
+      }
+
+      const tokenNumber = count + 1;
+
+      const updated = await this.prisma.appointment.update({
+        where: { id: appointmentId },
+        data: {
+          slotStart: waveSchedule.startTime,
+          slotEnd: waveSchedule.endTime,
+          waveScheduleId: waveSchedule.id,
+          tokenNumber,
+        },
+      });
+
+      const startStr = this.formatToAMPM(waveSchedule.startTime);
+      const endStr = this.formatToAMPM(waveSchedule.endTime);
+
+      return {
+        id: updated.id,
+        doctorId: app.doctorProfile.id,
+        patientId: app.patientProfile.id,
+        appointmentWindow: `${startStr}-${endStr}`,
+        tokenNumber,
+        appointmentType: 'WAVE',
+        status: updated.status,
+      };
     }
   }
 
@@ -821,7 +1007,15 @@ export class AppointmentService {
       },
     });
 
-    return updated;
+    return {
+      id: updated.id,
+      doctorId: updated.doctorProfileId,
+      patientId: updated.patientProfileId,
+      status: updated.status,
+      diagnosis: updated.diagnosis,
+      prescription: updated.prescription,
+      followUp: updated.followUp,
+    };
   }
 
   // Get appointment details (legacy/compatibility method)

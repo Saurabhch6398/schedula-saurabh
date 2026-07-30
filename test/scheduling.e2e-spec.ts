@@ -465,6 +465,85 @@ describe('Advanced Scheduling System (e2e)', () => {
       expect(res.body.message).toBe('Wave Full');
     });
 
+    it('should support WAVE rescheduling and capacity release', async () => {
+      // 1. Create a second WaveSchedule at 11:00 - 12:00
+      await request(app.getHttpServer())
+        .post('/doctor/availability')
+        .set('Authorization', `Bearer ${doctorToken}`)
+        .send({
+          date: testDate,
+          startTime: '11:00',
+          endTime: '12:00',
+          maxCapacity: 2,
+        })
+        .expect(HttpStatus.CREATED);
+
+      // Fetch the waves to get the second wave's ID
+      const wavesRes = await request(app.getHttpServer())
+        .get(`/doctor/${doctorProfileId}/waves`)
+        .query({ date: testDate })
+        .set('Authorization', `Bearer ${patient1Token}`)
+        .expect(HttpStatus.OK);
+
+      const wave1 = wavesRes.body.find((w: any) => w.window === '10AM-11AM');
+      const wave2 = wavesRes.body.find((w: any) => w.window === '11AM-12PM');
+      expect(wave1).toBeDefined();
+      expect(wave2).toBeDefined();
+
+      // Find Patient 1's appointment ID
+      const myApps = await request(app.getHttpServer())
+        .get('/appointments/my')
+        .set('Authorization', `Bearer ${patient1Token}`)
+        .expect(HttpStatus.OK);
+      const app1Id = myApps.body.data[0].id;
+
+      // 2. Reschedule Patient 1 to wave 2
+      const rescheduleRes = await request(app.getHttpServer())
+        .patch(`/appointments/${app1Id}/reschedule`)
+        .set('Authorization', `Bearer ${patient1Token}`)
+        .send({
+          waveId: wave2.id,
+        })
+        .expect(HttpStatus.OK);
+
+      expect(rescheduleRes.body.success).toBe(true);
+      expect(rescheduleRes.body.data.appointmentWindow).toBe('11AM-12PM');
+
+      // 3. Verify wave 1 now has 1/2 available capacity (releasing a slot)
+      const wavesResAfter = await request(app.getHttpServer())
+        .get(`/doctor/${doctorProfileId}/waves`)
+        .query({ date: testDate })
+        .set('Authorization', `Bearer ${patient1Token}`)
+        .expect(HttpStatus.OK);
+      const wave1After = wavesResAfter.body.find(
+        (w: any) => w.window === '10AM-11AM',
+      );
+      expect(wave1After.available).toBe('1/2');
+
+      // 4. Reject rescheduling to the same wave
+      await request(app.getHttpServer())
+        .patch(`/appointments/${app1Id}/reschedule`)
+        .set('Authorization', `Bearer ${patient1Token}`)
+        .send({
+          waveId: wave2.id,
+        })
+        .expect(HttpStatus.BAD_REQUEST);
+
+      // 5. Cleanup: Reschedule Patient 1 back to wave 1 and delete wave 2
+      await request(app.getHttpServer())
+        .patch(`/appointments/${app1Id}/reschedule`)
+        .set('Authorization', `Bearer ${patient1Token}`)
+        .send({
+          waveId: wave1.id,
+        })
+        .expect(HttpStatus.OK);
+
+      await request(app.getHttpServer())
+        .delete(`/doctor/availability/${wave2.id}`)
+        .set('Authorization', `Bearer ${doctorToken}`)
+        .expect(HttpStatus.OK);
+    });
+
     it('should get all wave availabilities for doctor using GET /doctor/availability', async () => {
       const res = await request(app.getHttpServer())
         .get('/doctor/availability')

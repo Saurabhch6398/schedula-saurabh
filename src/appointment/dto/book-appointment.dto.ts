@@ -11,6 +11,10 @@ export class BookAppointmentDto {
 
   @IsOptional()
   @IsString()
+  slotId?: string;
+
+  @IsOptional()
+  @IsString()
   date?: string;
 
   @IsOptional()
