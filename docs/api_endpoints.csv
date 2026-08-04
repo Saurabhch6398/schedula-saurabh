@@ -1,0 +1,31 @@
+Module,API Name,Method,Endpoint,Description
+Auth,User Signup,POST,/signup,Register a new doctor or patient
+Auth,User Login,POST,/login,Login and generate JWT token
+Doctor Profile,Create Doctor Profile,POST,/doctor/profile,Create doctor profile
+Doctor Profile,Get Doctor Profile,GET,/doctor/profile,Get doctor profile
+Doctor Profile,Update Doctor Profile,PATCH,/doctor/profile,Update doctor profile
+Doctor Profile,Update Scheduling Strategy,PATCH,/doctor/scheduling,Update scheduling type (STREAM or WAVE)
+Doctor Profile,Get Doctor Stream Slots,GET,/doctor/:id/slots?date=YYYY-MM-DD,Get stream slots for a doctor on a specific date
+Doctor Profile,Get Doctor Wave Windows,GET,/doctor/:id/waves?date=YYYY-MM-DD,Get wave windows for a doctor on a specific date
+Doctor Profile,Get Doctor Availability,GET,/doctor/:id/availability,Get all availability or specific date availability
+Doctor Profile,Get Doctor Appointments,GET,/doctor/appointments,Get appointments for the logged-in doctor
+Doctor Availability,Create Recurring Availability,POST,/doctor/availability,Create doctor recurring availability
+Doctor Availability,Get Recurring Availability,GET,/doctor/availability,Get doctor recurring availability
+Doctor Availability,Update Recurring Availability,PATCH,/doctor/availability/:id,Update doctor recurring availability by ID
+Doctor Availability,Delete Recurring Availability,DELETE,/doctor/availability/:id,Delete doctor recurring availability by ID
+Doctor Availability,Create Override,POST,/doctor/availability/override,Create custom availability override
+Doctor Availability,Delete Override,DELETE,/doctor/availability/override?date=YYYY-MM-DD,Delete custom availability override
+Doctor Availability,Get Availability by Date,GET,/doctor/availability/date?date=YYYY-MM-DD,Get availability for a specific date
+Patient Profile,Create Patient Profile,POST,/patient/profile,Create patient profile
+Patient Profile,Get Patient Profile,GET,/patient/profile,Get patient profile
+Patient Profile,Update Patient Profile,PATCH,/patient/profile,Update patient profile
+Patient Availability,Get Available Slots,GET,/patient/availability/:doctorId?date=YYYY-MM-DD,Fetch available slots for a doctor
+Appointment Booking,Book Appointment,POST,/appointments,Book a new appointment (stream or wave)
+Appointment Booking,Get My Appointments,GET,/appointments/my,Get all appointments of the logged-in patient
+Appointment Booking,Get Upcoming Appointments,GET,/appointments/upcoming,Get upcoming appointments of the logged-in patient
+Appointment Booking,Get Appointment History,GET,/appointments/history,Get past appointments of the logged-in patient
+Appointment Booking,Get Appointment Details,GET,/appointments/:id,Get detailed info of a specific appointment
+Appointment Booking,Cancel Appointment,PATCH,/appointments/:id/cancel,Cancel an appointment with a cancellation reason
+Appointment Booking,Reschedule Appointment,PATCH,/appointments/:id/reschedule,Reschedule an appointment to a new slot/date
+Appointment Booking,Complete Appointment,PATCH,/appointments/:id/complete,Complete an appointment and add diagnosis/prescription (Doctor only)
+App Root,Hello World,GET,/,Hello World message

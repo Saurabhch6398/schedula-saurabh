@@ -14,28 +14,31 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
-    let message = 'Internal server error';
+    const errorResponse: Record<string, any> = {
+      success: false,
+      message: 'Internal server error',
+    };
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
-      const resContent = exception.getResponse() as Record<string, unknown>;
+      const resContent = exception.getResponse();
       if (
         typeof resContent === 'object' &&
-        resContent !== null &&
-        'message' in resContent
+        resContent !== null
       ) {
-        const msg = resContent.message;
+        Object.assign(errorResponse, resContent);
+        const msg = (resContent as any).message;
         if (Array.isArray(msg)) {
-          message = msg.join(', ');
+          errorResponse.message = msg.join(', ');
         } else if (typeof msg === 'string') {
-          message = msg;
+          errorResponse.message = msg;
         } else {
-          message = exception.message;
+          errorResponse.message = exception.message;
         }
       } else if (typeof resContent === 'string') {
-        message = resContent;
+        errorResponse.message = resContent;
       } else {
-        message = exception.message;
+        errorResponse.message = exception.message;
       }
     } else if (exception instanceof Error) {
       // Catch duplicate key database errors from Prisma or others
@@ -46,15 +49,14 @@ export class HttpExceptionFilter implements ExceptionFilter {
         errMsg.includes('unique_active_wave_appointment')
       ) {
         status = HttpStatus.CONFLICT;
-        message = 'Slot already booked';
+        errorResponse.message = 'Slot already booked';
       } else {
-        message = errMsg;
+        errorResponse.message = errMsg;
       }
     }
 
-    response.status(status).json({
-      success: false,
-      message,
-    });
+    errorResponse.success = false;
+
+    response.status(status).json(errorResponse);
   }
 }
