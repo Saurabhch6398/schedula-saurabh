@@ -42,6 +42,7 @@ model DoctorProfile {
   customAvailabilities    CustomAvailability[]
   waveSchedules          WaveSchedule[]
   appointments           Appointment[]
+  appointmentQueues      AppointmentQueue[]
 
   schedulingType  SchedulingType @default(STREAM) @map("scheduling_type")
   slotDuration    Int?           @map("slot_duration")
@@ -92,6 +93,7 @@ model PatientProfile {
 
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   appointments Appointment[]
+  appointmentQueues AppointmentQueue[]
 
   @@map("patient_profiles")
 }
@@ -148,10 +150,39 @@ model Appointment {
   prescription String?
   followUp     String? @map("follow_up")
 
+  originalSlotStart      DateTime?          @map("original_slot_start")
+  originalSlotEnd        DateTime?          @map("original_slot_end")
+  originalTokenNumber    Int?               @map("original_token_number")
+  originalWaveScheduleId Int?               @map("original_wave_schedule_id")
+  reschedulingMetadata   String?            @map("rescheduling_metadata")
+  isRescheduled          Boolean            @default(false) @map("is_rescheduled")
+  rescheduleAccepted     Boolean?           @map("reschedule_accepted")
+  appointmentQueues      AppointmentQueue[]
+
   doctorProfile    DoctorProfile   @relation(fields: [doctorProfileId], references: [id], onDelete: Cascade)
   patientProfile   PatientProfile  @relation(fields: [patientProfileId], references: [id], onDelete: Cascade)
   waveSchedule     WaveSchedule?   @relation(fields: [waveScheduleId], references: [id], onDelete: Cascade)
 
   @@map("appointments")
+}
+
+model AppointmentQueue {
+  id                    Int             @id @default(autoincrement())
+  doctorProfileId       Int             @map("doctor_profile_id")
+  patientProfileId      Int             @map("patient_profile_id")
+  appointmentId         Int?            @map("appointment_id")
+  queueType             String          @map("queue_type") // "READY" | "RESCHEDULE" | "CANCELLATION"
+  status                String          @default("PENDING") @map("status") // "PENDING" | "OFFERED" | "ACCEPTED" | "REJECTED"
+  offeredSlotStart      DateTime?       @map("offered_slot_start")
+  offeredSlotEnd        DateTime?       @map("offered_slot_end")
+  offeredWaveScheduleId Int?            @map("offered_wave_schedule_id")
+  createdAt             DateTime        @default(now()) @map("created_at")
+  updatedAt             DateTime        @updatedAt @map("updated_at")
+
+  doctorProfile         DoctorProfile   @relation(fields: [doctorProfileId], references: [id], onDelete: Cascade)
+  patientProfile        PatientProfile  @relation(fields: [patientProfileId], references: [id], onDelete: Cascade)
+  appointment           Appointment?    @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+
+  @@map("appointment_queues")
 }
 

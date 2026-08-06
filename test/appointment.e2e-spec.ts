@@ -31,6 +31,7 @@ describe('Appointment Booking & Management System (e2e)', () => {
     prisma = moduleFixture.get<PrismaService>(PrismaService);
 
     // Clean DB
+    await prisma.appointmentQueue.deleteMany({});
     await prisma.appointment.deleteMany({});
     await prisma.waveSchedule.deleteMany({});
     await prisma.recurringAvailability.deleteMany({});

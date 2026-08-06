@@ -1,0 +1,28 @@
+$kind: http-request
+url: "{{baseUrl}}/appointments/1/complete"
+method: PATCH
+body:
+  type: json
+  content: |-
+    {
+        "diagnosis": "Elevated heart rate & minor radiation fatigue",
+        "prescription": "Take rest, consume extra hydration, avoid stressful workloads",
+        "followUp": "Return for observation in two weeks"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{jwtToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status code is 200", function () {
+          pm.response.to.have.status(200);
+      });
+      pm.test("Appointment completed successfully", function () {
+          const response = pm.response.json();
+          pm.expect(response.success).to.be.true;
+          pm.expect(response.message).to.equal("Appointment completed successfully");
+      });
+    language: text/javascript
+order: 3000
