@@ -1,0 +1,84 @@
+             Doctor Shrinks Availability
+                             │
+                             ▼
+             Fetch Existing Appointments
+                             │
+                             ▼
+             Compress Appointment Schedule
+             (Reduce Buffer if Possible)
+                             │
+                             ▼
+        Can all appointments fit in new schedule?
+                  │
+        ┌─────────┴──────────┐
+        │                    │
+       Yes                  No
+        │                    │
+        ▼                    ▼
+Update Appointment     Identify Overflow Patients
+Times                         │
+        │                     ▼
+        │          Create Cancellation/Reschedule Slot
+        │                     │
+        └──────────────┬──────┘
+                       ▼
+        Notify All Affected Patients
+        "Doctor's schedule has changed.
+         Your appointment has been rescheduled."
+                       │
+                       ▼
+        Patient Decision
+             │
+     ┌───────┴────────┐
+     │                │
+ Accept            Reject
+     │                │
+     ▼                ▼
+Update Appointment   Keep in Reschedule Queue /
+Status               Cancellation Queue
+     │                │
+     ▼                ▼
+Notify Doctor     Notify Doctor
+
+
+
+
+
+
+
+
+
+
+            Doctor Expands Availability
+                            │
+                            ▼
+               Generate Additional Slots
+                            │
+                            ▼
+              Is Ready Queue Empty?
+                     │
+          ┌──────────┴──────────┐
+          │                     │
+         Yes                   No
+          │                     │
+          ▼                     ▼
+       Finish          Select Patients (FIFO)
+                             │
+                             ▼
+                  Assign New Available Slots
+                             │
+                             ▼
+        Notify Ready Queue Patients
+      "A slot is now available."
+                             │
+                             ▼
+                Patient Decision
+                 │          │
+            Accept       Reject
+                 │          │
+                 ▼          ▼
+      Confirm Appointment  Offer Slot to
+                           Next Queue Patient
+                 │
+                 ▼
+          Notify Doctor

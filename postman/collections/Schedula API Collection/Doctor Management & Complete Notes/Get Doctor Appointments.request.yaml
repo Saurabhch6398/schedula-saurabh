@@ -1,0 +1,26 @@
+$kind: http-request
+url: "{{baseUrl}}/doctor/appointments?date=2026-09-20&status=BOOKED&page=1&limit=10&sort=date"
+method: GET
+queryParams:
+  date: "2026-09-20"
+  status: "BOOKED"
+  page: "1"
+  limit: "10"
+  sort: "date"
+auth:
+  type: bearer
+  credentials:
+    token: "{{jwtToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status code is 200", function () {
+          pm.response.to.have.status(200);
+      });
+      pm.test("Appointments list retrieved", function () {
+          const response = pm.response.json();
+          pm.expect(response.success).to.be.true;
+          pm.expect(response.data.appointments).to.be.an("array");
+      });
+    language: text/javascript
+order: 1000

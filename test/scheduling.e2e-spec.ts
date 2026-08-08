@@ -34,6 +34,7 @@ describe('Advanced Scheduling System (e2e)', () => {
     prisma = moduleFixture.get<PrismaService>(PrismaService);
 
     // Teardown database in correct dependency order
+    await prisma.appointmentQueue.deleteMany({});
     await prisma.appointment.deleteMany({});
     await prisma.waveSchedule.deleteMany({});
     await prisma.recurringAvailability.deleteMany({});
@@ -593,5 +594,9 @@ describe('Advanced Scheduling System (e2e)', () => {
 
       expect(wavesRes.body.length).toBe(0);
     });
+  });
+
+  afterAll(async () => {
+    await app.close();
   });
 });

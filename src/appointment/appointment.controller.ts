@@ -8,6 +8,8 @@ import {
   UseGuards,
   Request,
   ParseIntPipe,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { AppointmentService } from './appointment.service';
 import { AuthGuard } from '../auth/guards/auth.guard';
@@ -154,6 +156,80 @@ export class AppointmentController {
     );
     return {
       success: true,
+      data,
+    };
+  }
+
+  @Post(':id/accept-reschedule')
+  @Roles('PATIENT')
+  @HttpCode(HttpStatus.OK)
+  async acceptReschedule(
+    @Request() req: RequestWithUser,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    const data = await this.appointmentService.acceptReschedule(req.user.userId, id);
+    return {
+      success: true,
+      message: 'Rescheduled appointment accepted successfully',
+      data,
+    };
+  }
+
+  @Post(':id/reject-reschedule')
+  @Roles('PATIENT')
+  @HttpCode(HttpStatus.OK)
+  async rejectReschedule(
+    @Request() req: RequestWithUser,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    const data = await this.appointmentService.rejectReschedule(req.user.userId, id);
+    return {
+      success: true,
+      message: 'Rescheduled appointment rejected and cancelled successfully',
+      data,
+    };
+  }
+
+  @Post('waitlist')
+  @Roles('PATIENT')
+  async joinWaitlist(
+    @Request() req: RequestWithUser,
+    @Body() dto: { doctorId: number },
+  ) {
+    const data = await this.appointmentService.joinWaitlist(req.user.userId, dto.doctorId);
+    return {
+      success: true,
+      message: 'Successfully joined the waitlist',
+      data,
+    };
+  }
+
+  @Post('waitlist/:queueId/accept')
+  @Roles('PATIENT')
+  @HttpCode(HttpStatus.OK)
+  async acceptWaitlistOffer(
+    @Request() req: RequestWithUser,
+    @Param('queueId', ParseIntPipe) queueId: number,
+  ) {
+    const data = await this.appointmentService.acceptWaitlistOffer(req.user.userId, queueId);
+    return {
+      success: true,
+      message: 'Waitlist offer accepted and appointment booked successfully',
+      data,
+    };
+  }
+
+  @Post('waitlist/:queueId/reject')
+  @Roles('PATIENT')
+  @HttpCode(HttpStatus.OK)
+  async rejectWaitlistOffer(
+    @Request() req: RequestWithUser,
+    @Param('queueId', ParseIntPipe) queueId: number,
+  ) {
+    const data = await this.appointmentService.rejectWaitlistOffer(req.user.userId, queueId);
+    return {
+      success: true,
+      message: 'Waitlist offer rejected successfully',
       data,
     };
   }

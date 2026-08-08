@@ -76,13 +76,15 @@ export class AppointmentService {
   }
 
   // Helper: Find next available appointment slot or wave
-  private async suggestNextAvailable(
+  async suggestNextAvailable(
     doctorId: number,
     dateStr: string,
     type: 'STREAM' | 'WAVE',
     afterTimeStr?: string,
+    tx?: Prisma.TransactionClient,
   ): Promise<any> {
-    const doctorProfile = await this.prisma.doctorProfile.findUnique({
+    const client = tx || this.prisma;
+    const doctorProfile = await client.doctorProfile.findUnique({
       where: { id: doctorId },
     });
     if (!doctorProfile) return null;
@@ -107,7 +109,7 @@ export class AppointmentService {
 
       if (type === 'STREAM') {
         // 1. Check custom overrides
-        const overrides = await this.prisma.customAvailability.findMany({
+        const overrides = await client.customAvailability.findMany({
           where: {
             doctorProfileId: doctorId,
             date: new Date(Date.UTC(checkYear, checkMonth, checkDay)),
@@ -141,7 +143,7 @@ export class AppointmentService {
             'SATURDAY',
           ];
           const dayOfWeek = dayNames[checkDate.getUTCDay()];
-          const recurring = await this.prisma.recurringAvailability.findMany({
+          const recurring = await client.recurringAvailability.findMany({
             where: {
               doctorProfileId: doctorId,
               dayOfWeek,
@@ -157,7 +159,7 @@ export class AppointmentService {
         // Fetch existing bookings for this doctor on checkDate
         const startOfDay = new Date(Date.UTC(checkYear, checkMonth, checkDay, 0, 0, 0));
         const endOfDay = new Date(Date.UTC(checkYear, checkMonth, checkDay, 23, 59, 59, 999));
-        const bookings = await this.prisma.appointment.findMany({
+        const bookings = await client.appointment.findMany({
           where: {
             doctorProfileId: doctorId,
             appointmentType: 'STREAM',
@@ -235,7 +237,7 @@ export class AppointmentService {
         const startOfDay = new Date(Date.UTC(checkYear, checkMonth, checkDay, 0, 0, 0));
         const endOfDay = new Date(Date.UTC(checkYear, checkMonth, checkDay, 23, 59, 59, 999));
 
-        const waves = await this.prisma.waveSchedule.findMany({
+        const waves = await client.waveSchedule.findMany({
           where: {
             doctorProfileId: doctorId,
             startTime: {
@@ -250,7 +252,7 @@ export class AppointmentService {
           // Must start at least 30 minutes in the future
           if (wave.startTime.getTime() >= now + bufferTimeMs) {
             // Count booked appointments
-            const bookedCount = await this.prisma.appointment.count({
+            const bookedCount = await client.appointment.count({
               where: {
                 waveScheduleId: wave.id,
                 status: 'BOOKED',
@@ -1372,5 +1374,251 @@ export class AppointmentService {
         createdAt: app.createdAt.toISOString(),
       };
     }
+  }
+
+  // Accept Reschedule
+  async acceptReschedule(patientUserId: number, appointmentId: number) {
+    const app = await this.prisma.appointment.findUnique({
+      where: { id: appointmentId },
+      include: { patientProfile: true },
+    });
+
+    if (!app) {
+      throw new NotFoundException('Appointment not found');
+    }
+
+    if (app.patientProfile.userId !== patientUserId) {
+      throw new ForbiddenException('You do not have access to this appointment');
+    }
+
+    if (!app.isRescheduled || app.rescheduleAccepted !== null) {
+      throw new BadRequestException('No pending reschedule for this appointment');
+    }
+
+    const updated = await this.prisma.appointment.update({
+      where: { id: appointmentId },
+      data: { rescheduleAccepted: true },
+    });
+
+    const queueEntry = await this.prisma.appointmentQueue.findFirst({
+      where: {
+        appointmentId,
+        queueType: 'RESCHEDULE',
+        status: 'OFFERED',
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (queueEntry) {
+      await this.prisma.appointmentQueue.update({
+        where: { id: queueEntry.id },
+        data: { status: 'ACCEPTED' },
+      });
+    }
+
+    return updated;
+  }
+
+  // Reject Reschedule
+  async rejectReschedule(patientUserId: number, appointmentId: number) {
+    const app = await this.prisma.appointment.findUnique({
+      where: { id: appointmentId },
+      include: { patientProfile: true },
+    });
+
+    if (!app) {
+      throw new NotFoundException('Appointment not found');
+    }
+
+    if (app.patientProfile.userId !== patientUserId) {
+      throw new ForbiddenException('You do not have access to this appointment');
+    }
+
+    if (!app.isRescheduled || app.rescheduleAccepted !== null) {
+      throw new BadRequestException('No pending reschedule for this appointment');
+    }
+
+    const updated = await this.prisma.appointment.update({
+      where: { id: appointmentId },
+      data: {
+        rescheduleAccepted: false,
+        status: 'CANCELLED',
+        cancellationReason: 'Patient rejected automatic reschedule',
+        cancelledAt: new Date(),
+      },
+    });
+
+    const queueEntry = await this.prisma.appointmentQueue.findFirst({
+      where: {
+        appointmentId,
+        queueType: 'RESCHEDULE',
+        status: 'OFFERED',
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (queueEntry) {
+      await this.prisma.appointmentQueue.update({
+        where: { id: queueEntry.id },
+        data: { status: 'REJECTED' },
+      });
+    }
+
+    // Keep/Place in waitlist/ready queue for rescheduling later
+    await this.prisma.appointmentQueue.create({
+      data: {
+        doctorProfileId: app.doctorProfileId,
+        patientProfileId: app.patientProfileId,
+        appointmentId: app.id,
+        queueType: 'READY',
+        status: 'PENDING',
+      },
+    });
+
+    return updated;
+  }
+
+  // Join waitlist
+  async joinWaitlist(patientUserId: number, doctorId: number) {
+    const patientProfile = await this.prisma.patientProfile.findUnique({
+      where: { userId: patientUserId },
+    });
+
+    if (!patientProfile) {
+      throw new NotFoundException('Patient profile not found');
+    }
+
+    const doctorProfile = await this.prisma.doctorProfile.findUnique({
+      where: { id: doctorId },
+    });
+
+    if (!doctorProfile) {
+      throw new NotFoundException('Doctor profile not found');
+    }
+
+    const queueEntry = await this.prisma.appointmentQueue.create({
+      data: {
+        doctorProfileId: doctorId,
+        patientProfileId: patientProfile.id,
+        queueType: 'READY',
+        status: 'PENDING',
+      },
+    });
+
+    return queueEntry;
+  }
+
+  // Accept waitlist offer
+  async acceptWaitlistOffer(patientUserId: number, queueId: number) {
+    const queueEntry = await this.prisma.appointmentQueue.findUnique({
+      where: { id: queueId },
+      include: { patientProfile: true },
+    });
+
+    if (!queueEntry) {
+      throw new NotFoundException('Queue entry not found');
+    }
+
+    if (queueEntry.patientProfile.userId !== patientUserId) {
+      throw new ForbiddenException('You do not have access to this waitlist entry');
+    }
+
+    if (queueEntry.status !== 'OFFERED') {
+      throw new BadRequestException('No active offer for this waitlist entry');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      let newApp;
+      if (queueEntry.offeredSlotStart && queueEntry.offeredSlotEnd) {
+        newApp = await tx.appointment.create({
+          data: {
+            doctorProfileId: queueEntry.doctorProfileId,
+            patientProfileId: queueEntry.patientProfileId,
+            appointmentType: 'STREAM',
+            slotStart: queueEntry.offeredSlotStart,
+            slotEnd: queueEntry.offeredSlotEnd,
+            status: 'BOOKED',
+          },
+        });
+      } else if (queueEntry.offeredWaveScheduleId) {
+        const count = await tx.appointment.count({
+          where: { waveScheduleId: queueEntry.offeredWaveScheduleId, status: 'BOOKED' },
+        });
+
+        newApp = await tx.appointment.create({
+          data: {
+            doctorProfileId: queueEntry.doctorProfileId,
+            patientProfileId: queueEntry.patientProfileId,
+            appointmentType: 'WAVE',
+            waveScheduleId: queueEntry.offeredWaveScheduleId,
+            tokenNumber: count + 1,
+            status: 'BOOKED',
+          },
+        });
+      } else {
+        throw new BadRequestException('Invalid offered slot details in queue');
+      }
+
+      await tx.appointmentQueue.update({
+        where: { id: queueId },
+        data: {
+          status: 'ACCEPTED',
+          appointmentId: newApp.id,
+        },
+      });
+
+      return newApp;
+    });
+  }
+
+  // Reject waitlist offer
+  async rejectWaitlistOffer(patientUserId: number, queueId: number) {
+    const queueEntry = await this.prisma.appointmentQueue.findUnique({
+      where: { id: queueId },
+      include: { patientProfile: true },
+    });
+
+    if (!queueEntry) {
+      throw new NotFoundException('Queue entry not found');
+    }
+
+    if (queueEntry.patientProfile.userId !== patientUserId) {
+      throw new ForbiddenException('You do not have access to this waitlist entry');
+    }
+
+    if (queueEntry.status !== 'OFFERED') {
+      throw new BadRequestException('No active offer for this waitlist entry');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.appointmentQueue.update({
+        where: { id: queueId },
+        data: { status: 'REJECTED' },
+      });
+
+      // Pass the offer to the next patient in READY queue (FIFO)
+      const nextInQueue = await tx.appointmentQueue.findFirst({
+        where: {
+          doctorProfileId: queueEntry.doctorProfileId,
+          queueType: 'READY',
+          status: 'PENDING',
+        },
+        orderBy: { createdAt: 'asc' },
+      });
+
+      if (nextInQueue) {
+        await tx.appointmentQueue.update({
+          where: { id: nextInQueue.id },
+          data: {
+            status: 'OFFERED',
+            offeredSlotStart: queueEntry.offeredSlotStart,
+            offeredSlotEnd: queueEntry.offeredSlotEnd,
+            offeredWaveScheduleId: queueEntry.offeredWaveScheduleId,
+          },
+        });
+      }
+
+      return { message: 'Offer rejected successfully' };
+    });
   }
 }
