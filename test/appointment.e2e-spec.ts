@@ -520,4 +520,201 @@ describe('Appointment Booking & Management System (e2e)', () => {
       expect(res.body.message).toContain('already cancelled');
     });
   });
+
+  describe('5. New Rescheduling & Cutoff & Suggestion Validations', () => {
+    it('should reject rescheduling to the exact same slot/time', async () => {
+      // 1. Book a stream appointment
+      const bookRes = await request(app.getHttpServer())
+        .post('/appointment')
+        .set('Authorization', `Bearer ${patientToken}`)
+        .send({
+          doctorId: doctorProfileId,
+          date: testDate,
+          startTime: '15:00',
+          endTime: '15:15',
+        })
+        .expect(HttpStatus.CREATED);
+
+      const appId = bookRes.body.data.id;
+
+      // 2. Try to reschedule it to the same slot/time
+      const res = await request(app.getHttpServer())
+        .patch(`/appointment/${appId}/reschedule`)
+        .set('Authorization', `Bearer ${patientToken}`)
+        .send({
+          date: testDate,
+          startTime: '15:00',
+          endTime: '15:15',
+        })
+        .expect(HttpStatus.BAD_REQUEST);
+
+      expect(res.body.success).toBe(false);
+      expect(res.body.message).toContain('already scheduled');
+    });
+
+    it('should reject rescheduling an appointment within the 30-minute cutoff window', async () => {
+      const patient = await prisma.patientProfile.findFirst({
+        where: { user: { email: 'tony@example.com' } },
+      });
+      const patientId = patient!.id;
+
+      // Create a slot starting 15 minutes from now directly in DB
+      const nearFuture = new Date(Date.now() + 15 * 60 * 1000);
+      const appRecord = await prisma.appointment.create({
+        data: {
+          doctorProfileId,
+          patientProfileId: patientId,
+          appointmentType: 'STREAM',
+          slotStart: nearFuture,
+          slotEnd: new Date(nearFuture.getTime() + 15 * 60 * 1000),
+          status: 'BOOKED',
+          bookingSource: 'ONLINE',
+        },
+      });
+
+      const res = await request(app.getHttpServer())
+        .patch(`/appointment/${appRecord.id}/reschedule`)
+        .set('Authorization', `Bearer ${patientToken}`)
+        .send({
+          date: testDate,
+          startTime: '16:00',
+          endTime: '16:15',
+        })
+        .expect(HttpStatus.BAD_REQUEST);
+
+      expect(res.body.success).toBe(false);
+      expect(res.body.message).toContain('at least 30 minutes');
+    });
+
+    it('should reject cancelling an appointment within the 30-minute cutoff window', async () => {
+      const patient = await prisma.patientProfile.findFirst({
+        where: { user: { email: 'tony@example.com' } },
+      });
+      const patientId = patient!.id;
+
+      // Create a slot starting 10 minutes from now directly in DB
+      const nearFuture = new Date(Date.now() + 10 * 60 * 1000);
+      const appRecord = await prisma.appointment.create({
+        data: {
+          doctorProfileId,
+          patientProfileId: patientId,
+          appointmentType: 'STREAM',
+          slotStart: nearFuture,
+          slotEnd: new Date(nearFuture.getTime() + 15 * 60 * 1000),
+          status: 'BOOKED',
+          bookingSource: 'ONLINE',
+        },
+      });
+
+      const res = await request(app.getHttpServer())
+        .patch(`/appointment/${appRecord.id}/cancel`)
+        .set('Authorization', `Bearer ${patientToken}`)
+        .expect(HttpStatus.BAD_REQUEST);
+
+      expect(res.body.success).toBe(false);
+      expect(res.body.message).toContain('at least 30 minutes');
+    });
+
+    it('should suggest next available slot when rescheduling to an already booked slot', async () => {
+      // 1. Book slot 15:20-15:35
+      const appA = await request(app.getHttpServer())
+        .post('/appointment')
+        .set('Authorization', `Bearer ${patientToken}`)
+        .send({
+          doctorId: doctorProfileId,
+          date: testDate,
+          startTime: '15:20',
+          endTime: '15:35',
+        })
+        .expect(HttpStatus.CREATED);
+
+      // 2. Book slot 15:40-15:55 (Next available stream slot)
+      await request(app.getHttpServer())
+        .post('/appointment')
+        .set('Authorization', `Bearer ${anotherPatientToken}`)
+        .send({
+          doctorId: doctorProfileId,
+          date: testDate,
+          startTime: '15:40',
+          endTime: '15:55',
+        })
+        .expect(HttpStatus.CREATED);
+
+      // 3. Try to reschedule appA to 15:40-15:55 (which is booked)
+      const res = await request(app.getHttpServer())
+        .patch(`/appointment/${appA.body.data.id}/reschedule`)
+        .set('Authorization', `Bearer ${patientToken}`)
+        .send({
+          date: testDate,
+          startTime: '15:40',
+          endTime: '15:55',
+        })
+        .expect(HttpStatus.CONFLICT);
+
+      expect(res.body.success).toBe(false);
+      expect(res.body.message).toContain('already booked');
+      expect(res.body.nextAvailable).toBeDefined();
+      expect(res.body.nextAvailable.date).toBe(testDate);
+    });
+
+    it('should suggest next available wave when booking into a full wave', async () => {
+      // 1. Doctor sets scheduling type to WAVE
+      await request(app.getHttpServer())
+        .patch('/doctor/scheduling')
+        .set('Authorization', `Bearer ${doctorToken}`)
+        .send({
+          type: 'WAVE',
+        })
+        .expect(HttpStatus.OK);
+
+      // 2. Doctor creates a wave with capacity 1
+      const wsStart = new Date(Date.UTC(2031, 8, 20, 10, 0)); // Sept 20, 2031
+      const wsEnd = new Date(Date.UTC(2031, 8, 20, 11, 0));
+      const wave = await prisma.waveSchedule.create({
+        data: {
+          doctorProfileId,
+          startTime: wsStart,
+          endTime: wsEnd,
+          maxCapacity: 1,
+        },
+      });
+
+      // 3. Create another wave later that day as next available
+      const nextWaveStart = new Date(Date.UTC(2031, 8, 20, 12, 0));
+      const nextWaveEnd = new Date(Date.UTC(2031, 8, 20, 13, 0));
+      const wave2 = await prisma.waveSchedule.create({
+        data: {
+          doctorProfileId,
+          startTime: nextWaveStart,
+          endTime: nextWaveEnd,
+          maxCapacity: 2,
+        },
+      });
+
+      // 4. Patient 1 books the first wave
+      await request(app.getHttpServer())
+        .post('/appointment')
+        .set('Authorization', `Bearer ${patientToken}`)
+        .send({
+          doctorId: doctorProfileId,
+          waveId: wave.id,
+        })
+        .expect(HttpStatus.CREATED);
+
+      // 5. Patient 2 tries to book the same wave (now full)
+      const res = await request(app.getHttpServer())
+        .post('/appointment')
+        .set('Authorization', `Bearer ${anotherPatientToken}`)
+        .send({
+          doctorId: doctorProfileId,
+          waveId: wave.id,
+        })
+        .expect(HttpStatus.CONFLICT);
+
+      expect(res.body.success).toBe(false);
+      expect(res.body.message).toContain('Wave Full');
+      expect(res.body.nextAvailable).toBeDefined();
+      expect(res.body.nextAvailable.waveId).toBe(wave2.id);
+    });
+  });
 });

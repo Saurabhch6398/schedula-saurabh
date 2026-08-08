@@ -1,0 +1,27 @@
+$kind: http-request
+url: "{{baseUrl}}/appointments/1/reschedule"
+method: PATCH
+body:
+  type: json
+  content: |-
+    {
+        "newDate": "2030-08-20",
+        "newSlotId": "11:00-11:15"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{jwtToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status code is 200", function () {
+          pm.response.to.have.status(200);
+      });
+      pm.test("Rescheduled successfully", function () {
+          const response = pm.response.json();
+          pm.expect(response.success).to.be.true;
+          pm.expect(response.message).to.equal("Appointment rescheduled successfully");
+      });
+    language: text/javascript
+order: 5000
