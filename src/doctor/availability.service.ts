@@ -9,6 +9,7 @@ import { AvailabilityRepository } from './availability.repository';
 import { CreateAvailabilityDto } from './dto/create-availability.dto';
 import { UpdateAvailabilityDto } from './dto/update-availability.dto';
 import { CreateOverrideDto } from './dto/create-override.dto';
+import { ShrinkOverrideDto } from './dto/shrink-override.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { DoctorProfile } from '@prisma/client';
 import { AppointmentService } from '../appointment/appointment.service';
@@ -1300,6 +1301,199 @@ export class AvailabilityService {
     }
 
     return results;
+  }
+
+  async shrinkOverride(userId: number, id: number, dto: ShrinkOverrideDto) {
+    const profile = await this.getDoctorProfile(userId);
+
+    return this.prisma.$transaction(async (tx) => {
+      // Lock doctor profile for serialization
+      await tx.$queryRaw`SELECT id FROM doctor_profiles WHERE id = ${profile.id} FOR UPDATE`;
+
+      const customAvail = await tx.customAvailability.findUnique({
+        where: { id },
+      });
+
+      if (!customAvail) {
+        throw new NotFoundException('Override not found');
+      }
+
+      if (customAvail.doctorProfileId !== profile.id) {
+        throw new ForbiddenException('You do not have access to this override');
+      }
+
+      if (!customAvail.isAvailable || !customAvail.startTime || !customAvail.endTime) {
+        throw new BadRequestException('Cannot shrink an override that is already unavailable');
+      }
+
+      const oldStartMin = this.parseTimeToMinutes(customAvail.startTime);
+      const oldEndMin = this.parseTimeToMinutes(customAvail.endTime);
+
+      let newStartMin: number | undefined;
+      let newEndMin: number | undefined;
+      let isAvailableNew = true;
+
+      if (dto.startTime || dto.endTime) {
+        if (!dto.startTime || !dto.endTime) {
+          throw new BadRequestException(
+            'Both startTime and endTime must be provided to set a slot',
+          );
+        }
+
+        newStartMin = this.parseTimeToMinutes(dto.startTime);
+        newEndMin = this.parseTimeToMinutes(dto.endTime);
+
+        if (newStartMin >= newEndMin) {
+          throw new BadRequestException('Start time must be before end time');
+        }
+
+        if (newStartMin < oldStartMin || newEndMin > oldEndMin) {
+          throw new BadRequestException('Cannot expand availability window using shrink endpoint');
+        }
+      } else {
+        isAvailableNew = false;
+      }
+
+      // Update CustomAvailability override first so nested database queries see the updated bounds
+      if (isAvailableNew) {
+        await tx.customAvailability.update({
+          where: { id },
+          data: {
+            startTime: this.minutesToTimeString(newStartMin!),
+            endTime: this.minutesToTimeString(newEndMin!),
+            isAvailable: true,
+          },
+        });
+      } else {
+        await tx.customAvailability.update({
+          where: { id },
+          data: {
+            startTime: null,
+            endTime: null,
+            isAvailable: false,
+          },
+        });
+      }
+
+      // Find all STREAM booked appointments for this doctor on this day
+      const dateObj = customAvail.date;
+      const year = dateObj.getUTCFullYear();
+      const month = dateObj.getUTCMonth();
+      const day = dateObj.getUTCDate();
+      const startOfDay = new Date(Date.UTC(year, month, day, 0, 0, 0));
+      const endOfDay = new Date(Date.UTC(year, month, day, 23, 59, 59, 999));
+
+      const bookedAppts = await tx.appointment.findMany({
+        where: {
+          doctorProfileId: profile.id,
+          status: 'BOOKED',
+          appointmentType: 'STREAM',
+          slotStart: {
+            gte: startOfDay,
+            lte: endOfDay,
+          },
+        },
+      });
+
+      // Filter to find the affected appointments
+      const affectedAppts = bookedAppts.filter((app) => {
+        if (!app.slotStart || !app.slotEnd) return false;
+
+        const appStartMin = app.slotStart.getUTCHours() * 60 + app.slotStart.getUTCMinutes();
+        const appEndMin = app.slotEnd.getUTCHours() * 60 + app.slotEnd.getUTCMinutes();
+
+        // Check if it's within the old window
+        const inOldWindow = appStartMin >= oldStartMin && appEndMin <= oldEndMin;
+        if (!inOldWindow) return false;
+
+        if (!isAvailableNew) {
+          return true; // entire window is removed
+        }
+
+        // It's in the old window, is it outside the new window?
+        return appStartMin < newStartMin! || appEndMin > newEndMin!;
+      });
+
+      // Sort affected appointments by slot start time to process them chronologically
+      affectedAppts.sort((a, b) => a.slotStart!.getTime() - b.slotStart!.getTime());
+
+      // Reassign affected appointments sequentially
+      for (const app of affectedAppts) {
+        const dateStr = app.slotStart!.toISOString().split('T')[0];
+        const suggestResult = await this.appointmentService.suggestNextAvailable(
+          profile.id,
+          dateStr,
+          'STREAM',
+          undefined,
+          tx,
+        );
+
+        if (!suggestResult) {
+          throw new BadRequestException(
+            `No available slot found for rescheduling appointment ID ${app.id}`,
+          );
+        }
+
+        const [sYear, sMonth, sDay] = suggestResult.date.split('-').map(Number);
+        const [startHourStr, startMinStr] = suggestResult.startTime.split(':');
+        const [endHourStr, endMinStr] = suggestResult.endTime.split(':');
+
+        const newSlotStart = new Date(
+          Date.UTC(sYear, sMonth - 1, sDay, Number(startHourStr), Number(startMinStr)),
+        );
+        const newSlotEnd = new Date(
+          Date.UTC(sYear, sMonth - 1, sDay, Number(endHourStr), Number(endMinStr)),
+        );
+
+        // Capture previous date/time
+        const prevDate = app.slotStart!.toISOString().split('T')[0];
+        const prevStartTime = this.formatToAMPM(app.slotStart!);
+        const prevEndTime = this.formatToAMPM(app.slotEnd!);
+
+        // Update appointment in DB
+        await tx.appointment.update({
+          where: { id: app.id },
+          data: {
+            slotStart: newSlotStart,
+            slotEnd: newSlotEnd,
+            wasAutoRescheduled: true,
+            previousDate: prevDate,
+            previousStartTime: prevStartTime,
+            previousEndTime: prevEndTime,
+            originalSlotStart: app.originalSlotStart ?? app.slotStart,
+            originalSlotEnd: app.originalSlotEnd ?? app.slotEnd,
+            isRescheduled: true,
+            rescheduleAccepted: null,
+            reschedulingMetadata: JSON.stringify({
+              action: 'AUTO_RESCHEDULE_SHRINK',
+              oldStart: app.slotStart!.toISOString(),
+              oldEnd: app.slotEnd!.toISOString(),
+              newStart: newSlotStart.toISOString(),
+              newEnd: newSlotEnd.toISOString(),
+              timestamp: new Date().toISOString(),
+            }),
+          },
+        });
+
+        // Create a RESCHEDULE queue entry
+        await tx.appointmentQueue.create({
+          data: {
+            doctorProfileId: profile.id,
+            patientProfileId: app.patientProfileId,
+            appointmentId: app.id,
+            queueType: 'RESCHEDULE',
+            status: 'OFFERED',
+            offeredSlotStart: newSlotStart,
+            offeredSlotEnd: newSlotEnd,
+          },
+        });
+      }
+
+      return {
+        message: 'Override shrunk successfully',
+        affectedCount: affectedAppts.length,
+      };
+    });
   }
 
   private formatToAMPM(date: Date): string {

@@ -1162,6 +1162,10 @@ export class AppointmentService {
         prescription: app.prescription,
         followUp: app.followUp,
         createdAt: app.createdAt.toISOString(),
+        wasAutoRescheduled: app.wasAutoRescheduled,
+        previousDate: app.previousDate,
+        previousStartTime: app.previousStartTime,
+        previousEndTime: app.previousEndTime,
       };
     });
   }

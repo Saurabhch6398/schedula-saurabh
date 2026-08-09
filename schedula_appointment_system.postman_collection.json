@@ -310,6 +310,52 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Shrink Custom Override",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"startTime\": \"03:00 PM\",\n  \"endTime\": \"04:00 PM\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/doctor/availability/override/shrink/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctor",
+                "availability",
+                "override",
+                "shrink",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
         }
       ]
     },
@@ -489,6 +535,34 @@
               "path": [
                 "appointment",
                 "my"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Appointments (me)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/appointments/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointments",
+                "me"
               ]
             }
           },
