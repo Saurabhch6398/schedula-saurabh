@@ -108,7 +108,7 @@
       "name": "Profiles & Scheduling Setup (Doctor)",
       "item": [
         {
-          "name": "Create/Update Doctor Profile",
+          "name": "Create Doctor Profile (Onboarding)",
           "request": {
             "auth": {
               "type": "bearer",
@@ -159,6 +159,43 @@
             },
             "method": "GET",
             "header": [],
+            "url": {
+              "raw": "{{base_url}}/doctor/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctor",
+                "profile"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Doctor Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"consultationFee\": 400,\n  \"availability\": \"Mon-Fri 10AM-4PM\"\n}"
+            },
             "url": {
               "raw": "{{base_url}}/doctor/profile",
               "host": [
