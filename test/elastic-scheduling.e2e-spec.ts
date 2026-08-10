@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unused-vars */
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, HttpStatus } from '@nestjs/common';
 import request from 'supertest';
@@ -259,7 +259,10 @@ describe('Elastic Scheduling & Queueing System (e2e)', () => {
 
       expect(appts.length).toBe(3);
       // First appointment start time is 10:00
-      expect(appts[0].slotStart!.getUTCHours() * 60 + appts[0].slotStart!.getUTCMinutes()).toBe(10 * 60);
+      expect(
+        appts[0].slotStart!.getUTCHours() * 60 +
+          appts[0].slotStart!.getUTCMinutes(),
+      ).toBe(10 * 60);
       expect(appts[0].isRescheduled).toBe(true);
 
       // Check rescheduling metadata audit trail
@@ -326,7 +329,9 @@ describe('Elastic Scheduling & Queueing System (e2e)', () => {
 
       expect(rescheduledApp!.isRescheduled).toBe(true);
       expect(rescheduledApp!.slotStart!.toISOString()).toContain(nextMonday);
-      expect(rescheduledApp!.reschedulingMetadata).toContain('AUTO_RESCHEDULE_OVERFLOW');
+      expect(rescheduledApp!.reschedulingMetadata).toContain(
+        'AUTO_RESCHEDULE_OVERFLOW',
+      );
     });
 
     it('should rollback transaction and fail if no future slot is available to reschedule overflow patients', async () => {
@@ -366,7 +371,9 @@ describe('Elastic Scheduling & Queueing System (e2e)', () => {
 
       // Temporarily mock suggestNextAvailable to return null (no slots available)
       const originalSuggest = app.get(AppointmentService).suggestNextAvailable;
-      app.get(AppointmentService).suggestNextAvailable = jest.fn().mockResolvedValue(null);
+      app.get(AppointmentService).suggestNextAvailable = jest
+        .fn()
+        .mockResolvedValue(null);
 
       // Expect a 400 Bad Request on shrink
       await request(app.getHttpServer())
@@ -383,7 +390,9 @@ describe('Elastic Scheduling & Queueing System (e2e)', () => {
       app.get(AppointmentService).suggestNextAvailable = originalSuggest;
 
       // Verify that appointments were NOT modified (transaction was rolled back)
-      const apps = await prisma.appointment.findMany({ where: { doctorProfileId } });
+      const apps = await prisma.appointment.findMany({
+        where: { doctorProfileId },
+      });
       for (const appItem of apps) {
         expect(appItem.isRescheduled).toBe(false);
       }
@@ -454,7 +463,9 @@ describe('Elastic Scheduling & Queueing System (e2e)', () => {
         .set('Authorization', `Bearer ${patientToken}`)
         .expect(HttpStatus.OK);
 
-      const appItem = await prisma.appointment.findUnique({ where: { id: appointmentId } });
+      const appItem = await prisma.appointment.findUnique({
+        where: { id: appointmentId },
+      });
       expect(appItem!.rescheduleAccepted).toBe(true);
 
       const queueEntry = await prisma.appointmentQueue.findFirst({
@@ -469,7 +480,9 @@ describe('Elastic Scheduling & Queueing System (e2e)', () => {
         .set('Authorization', `Bearer ${patientToken}`)
         .expect(HttpStatus.OK);
 
-      const appItem = await prisma.appointment.findUnique({ where: { id: appointmentId } });
+      const appItem = await prisma.appointment.findUnique({
+        where: { id: appointmentId },
+      });
       expect(appItem!.rescheduleAccepted).toBe(false);
       expect(appItem!.status).toBe('CANCELLED');
 

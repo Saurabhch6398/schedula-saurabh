@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { DoctorModule } from './doctor/doctor.module';
 import { PatientModule } from './patient/patient.module';
 import { AppointmentModule } from './appointment/appointment.module';
+import { NotificationModule } from './notification/notification.module';
 
 import { APP_FILTER } from '@nestjs/core';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -17,6 +18,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
     DoctorModule,
     PatientModule,
     AppointmentModule,
+    NotificationModule,
   ],
   controllers: [AppController],
   providers: [

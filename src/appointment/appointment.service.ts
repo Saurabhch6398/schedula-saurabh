@@ -10,10 +10,14 @@ import { BookAppointmentDto } from './dto/book-appointment.dto';
 import { RescheduleAppointmentDto } from './dto/reschedule-appointment.dto';
 import { CompleteAppointmentDto } from './dto/complete-appointment.dto';
 import { Prisma, AppointmentStatus } from '@prisma/client';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class AppointmentService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationService: NotificationService,
+  ) {}
 
   // Helper: Parses 24h or 12h time string to minutes from midnight
   private parseTimeToMinutes(timeStr: string): number {
@@ -98,7 +102,7 @@ export class AppointmentService {
     const now = Date.now();
     const bufferTimeMs = 30 * 60 * 1000; // 30 minutes booking buffer
 
-    let checkDate = new Date(Date.UTC(year, month - 1, day));
+    const checkDate = new Date(Date.UTC(year, month - 1, day));
 
     // Try finding an available slot/wave day by day, up to 30 days
     for (let i = 0; i < 30; i++) {
@@ -116,7 +120,11 @@ export class AppointmentService {
           },
         });
 
-        let availabilities: { startTime?: string; endTime?: string; isAvailable: boolean }[] = [];
+        let availabilities: {
+          startTime?: string;
+          endTime?: string;
+          isAvailable: boolean;
+        }[] = [];
         let isOverridden = false;
 
         if (overrides.length > 0) {
@@ -157,8 +165,12 @@ export class AppointmentService {
         }
 
         // Fetch existing bookings for this doctor on checkDate
-        const startOfDay = new Date(Date.UTC(checkYear, checkMonth, checkDay, 0, 0, 0));
-        const endOfDay = new Date(Date.UTC(checkYear, checkMonth, checkDay, 23, 59, 59, 999));
+        const startOfDay = new Date(
+          Date.UTC(checkYear, checkMonth, checkDay, 0, 0, 0),
+        );
+        const endOfDay = new Date(
+          Date.UTC(checkYear, checkMonth, checkDay, 23, 59, 59, 999),
+        );
         const bookings = await client.appointment.findMany({
           where: {
             doctorProfileId: doctorId,
@@ -171,7 +183,12 @@ export class AppointmentService {
           },
         });
 
-        const availableSlots: { slot: string; start: string; end: string; startTimeMin: number }[] = [];
+        const availableSlots: {
+          slot: string;
+          start: string;
+          end: string;
+          startTimeMin: number;
+        }[] = [];
 
         for (const avail of availabilities) {
           if (!avail.startTime || !avail.endTime) continue;
@@ -185,7 +202,13 @@ export class AppointmentService {
             const slotEndMin = current + slotDuration;
 
             const slotStartDt = new Date(
-              Date.UTC(checkYear, checkMonth, checkDay, Math.floor(slotStartMin / 60), slotStartMin % 60),
+              Date.UTC(
+                checkYear,
+                checkMonth,
+                checkDay,
+                Math.floor(slotStartMin / 60),
+                slotStartMin % 60,
+              ),
             );
 
             // Must be at least 30 mins in the future
@@ -202,9 +225,15 @@ export class AppointmentService {
               if (afterCheck) {
                 const isBooked = bookings.some((app) => {
                   if (!app.slotStart || !app.slotEnd) return false;
-                  const appStartMin = app.slotStart.getUTCHours() * 60 + app.slotStart.getUTCMinutes();
-                  const appEndMin = app.slotEnd.getUTCHours() * 60 + app.slotEnd.getUTCMinutes();
-                  return appStartMin === slotStartMin && appEndMin === slotEndMin;
+                  const appStartMin =
+                    app.slotStart.getUTCHours() * 60 +
+                    app.slotStart.getUTCMinutes();
+                  const appEndMin =
+                    app.slotEnd.getUTCHours() * 60 +
+                    app.slotEnd.getUTCMinutes();
+                  return (
+                    appStartMin === slotStartMin && appEndMin === slotEndMin
+                  );
                 });
 
                 if (!isBooked) {
@@ -234,8 +263,12 @@ export class AppointmentService {
         }
       } else {
         // WAVE scheduling
-        const startOfDay = new Date(Date.UTC(checkYear, checkMonth, checkDay, 0, 0, 0));
-        const endOfDay = new Date(Date.UTC(checkYear, checkMonth, checkDay, 23, 59, 59, 999));
+        const startOfDay = new Date(
+          Date.UTC(checkYear, checkMonth, checkDay, 0, 0, 0),
+        );
+        const endOfDay = new Date(
+          Date.UTC(checkYear, checkMonth, checkDay, 23, 59, 59, 999),
+        );
 
         const waves = await client.waveSchedule.findMany({
           where: {
@@ -384,9 +417,15 @@ export class AppointmentService {
           },
         });
         if (dailyCount >= 20) {
-          const nextAvail = await this.suggestNextAvailable(doctorProfile.id, dateStr, 'STREAM', startTimeStr);
+          const nextAvail = await this.suggestNextAvailable(
+            doctorProfile.id,
+            dateStr,
+            'STREAM',
+            startTimeStr,
+          );
           throw new BadRequestException({
-            message: 'Doctor is fully booked for this date (daily booking limit reached)',
+            message:
+              'Doctor is fully booked for this date (daily booking limit reached)',
             nextAvailable: nextAvail,
           });
         }
@@ -401,7 +440,12 @@ export class AppointmentService {
           },
         });
         if (duplicate) {
-          const nextAvail = await this.suggestNextAvailable(doctorProfile.id, dateStr, 'STREAM', startTimeStr);
+          const nextAvail = await this.suggestNextAvailable(
+            doctorProfile.id,
+            dateStr,
+            'STREAM',
+            startTimeStr,
+          );
           throw new ConflictException({
             message: 'Duplicate booking',
             nextAvailable: nextAvail,
@@ -418,7 +462,12 @@ export class AppointmentService {
           },
         });
         if (slotBooked) {
-          const nextAvail = await this.suggestNextAvailable(doctorProfile.id, dateStr, 'STREAM', startTimeStr);
+          const nextAvail = await this.suggestNextAvailable(
+            doctorProfile.id,
+            dateStr,
+            'STREAM',
+            startTimeStr,
+          );
           throw new ConflictException({
             message: 'Slot already booked',
             nextAvailable: nextAvail,
@@ -478,7 +527,12 @@ export class AppointmentService {
         }
 
         if (!isAvailable) {
-          const nextAvail = await this.suggestNextAvailable(doctorProfile.id, dateStr, 'STREAM', startTimeStr);
+          const nextAvail = await this.suggestNextAvailable(
+            doctorProfile.id,
+            dateStr,
+            'STREAM',
+            startTimeStr,
+          );
           throw new BadRequestException({
             message: 'Slot is not available',
             nextAvailable: nextAvail,
@@ -497,6 +551,12 @@ export class AppointmentService {
             bookingSource: dto.bookingSource ?? 'ONLINE',
           },
         });
+
+        await this.notificationService.triggerNotification(
+          tx,
+          app.id,
+          'APPOINTMENT_BOOKED',
+        );
 
         return {
           id: app.id,
@@ -526,7 +586,11 @@ export class AppointmentService {
         });
 
         if (!waveSchedule) {
-          const nextAvail = await this.suggestNextAvailable(doctorProfile.id, dto.date || new Date().toISOString().split('T')[0], 'WAVE');
+          const nextAvail = await this.suggestNextAvailable(
+            doctorProfile.id,
+            dto.date || new Date().toISOString().split('T')[0],
+            'WAVE',
+          );
           throw new NotFoundException({
             message: 'Wave schedule not found',
             nextAvailable: nextAvail,
@@ -534,7 +598,11 @@ export class AppointmentService {
         }
 
         if (waveSchedule.doctorProfileId !== doctorProfile.id) {
-          const nextAvail = await this.suggestNextAvailable(doctorProfile.id, waveSchedule.startTime.toISOString().split('T')[0], 'WAVE');
+          const nextAvail = await this.suggestNextAvailable(
+            doctorProfile.id,
+            waveSchedule.startTime.toISOString().split('T')[0],
+            'WAVE',
+          );
           throw new BadRequestException({
             message: 'Wave schedule does not belong to this doctor',
             nextAvailable: nextAvail,
@@ -585,9 +653,14 @@ export class AppointmentService {
           },
         });
         if (dailyCount >= 20) {
-          const nextAvail = await this.suggestNextAvailable(doctorProfile.id, waveSchedule.startTime.toISOString().split('T')[0], 'WAVE');
+          const nextAvail = await this.suggestNextAvailable(
+            doctorProfile.id,
+            waveSchedule.startTime.toISOString().split('T')[0],
+            'WAVE',
+          );
           throw new BadRequestException({
-            message: 'Doctor is fully booked for this date (daily booking limit reached)',
+            message:
+              'Doctor is fully booked for this date (daily booking limit reached)',
             nextAvailable: nextAvail,
           });
         }
@@ -601,7 +674,11 @@ export class AppointmentService {
           },
         });
         if (duplicate) {
-          const nextAvail = await this.suggestNextAvailable(doctorProfile.id, waveSchedule.startTime.toISOString().split('T')[0], 'WAVE');
+          const nextAvail = await this.suggestNextAvailable(
+            doctorProfile.id,
+            waveSchedule.startTime.toISOString().split('T')[0],
+            'WAVE',
+          );
           throw new ConflictException({
             message: 'Duplicate booking',
             nextAvailable: nextAvail,
@@ -614,7 +691,11 @@ export class AppointmentService {
         });
 
         if (count >= waveSchedule.maxCapacity) {
-          const nextAvail = await this.suggestNextAvailable(doctorProfile.id, waveSchedule.startTime.toISOString().split('T')[0], 'WAVE');
+          const nextAvail = await this.suggestNextAvailable(
+            doctorProfile.id,
+            waveSchedule.startTime.toISOString().split('T')[0],
+            'WAVE',
+          );
           throw new ConflictException({
             message: 'Wave Full',
             nextAvailable: nextAvail,
@@ -636,6 +717,12 @@ export class AppointmentService {
             bookingSource: dto.bookingSource ?? 'ONLINE',
           },
         });
+
+        await this.notificationService.triggerNotification(
+          tx,
+          app.id,
+          'APPOINTMENT_BOOKED',
+        );
 
         const startStr = this.formatToAMPM(waveSchedule.startTime);
         const endStr = this.formatToAMPM(waveSchedule.endTime);
@@ -694,23 +781,31 @@ export class AppointmentService {
       );
     }
 
-    const updated = await this.prisma.appointment.update({
-      where: { id: appointmentId },
-      data: {
-        status: 'CANCELLED',
-        cancellationReason: reason ?? 'Cancelled by patient',
-        cancelledAt: new Date(),
-      },
-    });
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.appointment.update({
+        where: { id: appointmentId },
+        data: {
+          status: 'CANCELLED',
+          cancellationReason: reason ?? 'Cancelled by patient',
+          cancelledAt: new Date(),
+        },
+      });
 
-    return {
-      id: updated.id,
-      doctorId: updated.doctorProfileId,
-      patientId: updated.patientProfileId,
-      status: updated.status,
-      cancellationReason: updated.cancellationReason,
-      cancelledAt: updated.cancelledAt?.toISOString(),
-    };
+      await this.notificationService.triggerNotification(
+        tx,
+        updated.id,
+        'APPOINTMENT_CANCELLED',
+      );
+
+      return {
+        id: updated.id,
+        doctorId: updated.doctorProfileId,
+        patientId: updated.patientProfileId,
+        status: updated.status,
+        cancellationReason: updated.cancellationReason,
+        cancelledAt: updated.cancelledAt?.toISOString(),
+      };
+    });
   }
 
   // Reschedule appointment
@@ -852,9 +947,15 @@ export class AppointmentService {
           },
         });
         if (dailyCount >= 20) {
-          const nextAvail = await this.suggestNextAvailable(doctorProfile.id, targetDate, 'STREAM', startTimeStr);
+          const nextAvail = await this.suggestNextAvailable(
+            doctorProfile.id,
+            targetDate,
+            'STREAM',
+            startTimeStr,
+          );
           throw new BadRequestException({
-            message: 'Doctor is fully booked for this date (daily booking limit reached)',
+            message:
+              'Doctor is fully booked for this date (daily booking limit reached)',
             nextAvailable: nextAvail,
           });
         }
@@ -911,7 +1012,12 @@ export class AppointmentService {
         }
 
         if (!isAvailable) {
-          const nextAvail = await this.suggestNextAvailable(doctorProfile.id, targetDate, 'STREAM', startTimeStr);
+          const nextAvail = await this.suggestNextAvailable(
+            doctorProfile.id,
+            targetDate,
+            'STREAM',
+            startTimeStr,
+          );
           throw new BadRequestException({
             message: 'Slot is not available',
             nextAvailable: nextAvail,
@@ -929,7 +1035,12 @@ export class AppointmentService {
           },
         });
         if (slotBooked) {
-          const nextAvail = await this.suggestNextAvailable(doctorProfile.id, targetDate, 'STREAM', startTimeStr);
+          const nextAvail = await this.suggestNextAvailable(
+            doctorProfile.id,
+            targetDate,
+            'STREAM',
+            startTimeStr,
+          );
           throw new ConflictException({
             message: 'Target slot is already booked',
             nextAvailable: nextAvail,
@@ -946,6 +1057,12 @@ export class AppointmentService {
             tokenNumber: null,
           },
         });
+
+        await this.notificationService.triggerNotification(
+          tx,
+          updated.id,
+          'APPOINTMENT_RESCHEDULED',
+        );
 
         return {
           id: updated.id,
@@ -975,7 +1092,11 @@ export class AppointmentService {
         });
 
         if (!waveSchedule) {
-          const nextAvail = await this.suggestNextAvailable(doctorProfile.id, new Date().toISOString().split('T')[0], 'WAVE');
+          const nextAvail = await this.suggestNextAvailable(
+            doctorProfile.id,
+            new Date().toISOString().split('T')[0],
+            'WAVE',
+          );
           throw new NotFoundException({
             message: 'Wave schedule not found',
             nextAvailable: nextAvail,
@@ -983,7 +1104,11 @@ export class AppointmentService {
         }
 
         if (waveSchedule.doctorProfileId !== doctorProfile.id) {
-          const nextAvail = await this.suggestNextAvailable(doctorProfile.id, waveSchedule.startTime.toISOString().split('T')[0], 'WAVE');
+          const nextAvail = await this.suggestNextAvailable(
+            doctorProfile.id,
+            waveSchedule.startTime.toISOString().split('T')[0],
+            'WAVE',
+          );
           throw new BadRequestException({
             message: 'Wave schedule does not belong to this doctor',
             nextAvailable: nextAvail,
@@ -991,7 +1116,10 @@ export class AppointmentService {
         }
 
         // Same wave check
-        if (app.appointmentType === 'WAVE' && app.waveScheduleId === waveSchedule.id) {
+        if (
+          app.appointmentType === 'WAVE' &&
+          app.waveScheduleId === waveSchedule.id
+        ) {
           throw new BadRequestException(
             'Appointment is already scheduled for this wave',
           );
@@ -1043,9 +1171,14 @@ export class AppointmentService {
           },
         });
         if (dailyCount >= 20) {
-          const nextAvail = await this.suggestNextAvailable(doctorProfile.id, waveSchedule.startTime.toISOString().split('T')[0], 'WAVE');
+          const nextAvail = await this.suggestNextAvailable(
+            doctorProfile.id,
+            waveSchedule.startTime.toISOString().split('T')[0],
+            'WAVE',
+          );
           throw new BadRequestException({
-            message: 'Doctor is fully booked for this date (daily booking limit reached)',
+            message:
+              'Doctor is fully booked for this date (daily booking limit reached)',
             nextAvailable: nextAvail,
           });
         }
@@ -1060,7 +1193,11 @@ export class AppointmentService {
           },
         });
         if (duplicate) {
-          const nextAvail = await this.suggestNextAvailable(doctorProfile.id, waveSchedule.startTime.toISOString().split('T')[0], 'WAVE');
+          const nextAvail = await this.suggestNextAvailable(
+            doctorProfile.id,
+            waveSchedule.startTime.toISOString().split('T')[0],
+            'WAVE',
+          );
           throw new ConflictException({
             message: 'Duplicate booking',
             nextAvailable: nextAvail,
@@ -1073,7 +1210,11 @@ export class AppointmentService {
         });
 
         if (count >= waveSchedule.maxCapacity) {
-          const nextAvail = await this.suggestNextAvailable(doctorProfile.id, waveSchedule.startTime.toISOString().split('T')[0], 'WAVE');
+          const nextAvail = await this.suggestNextAvailable(
+            doctorProfile.id,
+            waveSchedule.startTime.toISOString().split('T')[0],
+            'WAVE',
+          );
           throw new ConflictException({
             message: 'Wave Full',
             nextAvailable: nextAvail,
@@ -1092,6 +1233,12 @@ export class AppointmentService {
             tokenNumber,
           },
         });
+
+        await this.notificationService.triggerNotification(
+          tx,
+          updated.id,
+          'APPOINTMENT_RESCHEDULED',
+        );
 
         const startStr = this.formatToAMPM(waveSchedule.startTime);
         const endStr = this.formatToAMPM(waveSchedule.endTime);
@@ -1392,11 +1539,15 @@ export class AppointmentService {
     }
 
     if (app.patientProfile.userId !== patientUserId) {
-      throw new ForbiddenException('You do not have access to this appointment');
+      throw new ForbiddenException(
+        'You do not have access to this appointment',
+      );
     }
 
     if (!app.isRescheduled || app.rescheduleAccepted !== null) {
-      throw new BadRequestException('No pending reschedule for this appointment');
+      throw new BadRequestException(
+        'No pending reschedule for this appointment',
+      );
     }
 
     const updated = await this.prisma.appointment.update({
@@ -1435,51 +1586,63 @@ export class AppointmentService {
     }
 
     if (app.patientProfile.userId !== patientUserId) {
-      throw new ForbiddenException('You do not have access to this appointment');
+      throw new ForbiddenException(
+        'You do not have access to this appointment',
+      );
     }
 
     if (!app.isRescheduled || app.rescheduleAccepted !== null) {
-      throw new BadRequestException('No pending reschedule for this appointment');
+      throw new BadRequestException(
+        'No pending reschedule for this appointment',
+      );
     }
 
-    const updated = await this.prisma.appointment.update({
-      where: { id: appointmentId },
-      data: {
-        rescheduleAccepted: false,
-        status: 'CANCELLED',
-        cancellationReason: 'Patient rejected automatic reschedule',
-        cancelledAt: new Date(),
-      },
-    });
-
-    const queueEntry = await this.prisma.appointmentQueue.findFirst({
-      where: {
-        appointmentId,
-        queueType: 'RESCHEDULE',
-        status: 'OFFERED',
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    if (queueEntry) {
-      await this.prisma.appointmentQueue.update({
-        where: { id: queueEntry.id },
-        data: { status: 'REJECTED' },
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.appointment.update({
+        where: { id: appointmentId },
+        data: {
+          rescheduleAccepted: false,
+          status: 'CANCELLED',
+          cancellationReason: 'Patient rejected automatic reschedule',
+          cancelledAt: new Date(),
+        },
       });
-    }
 
-    // Keep/Place in waitlist/ready queue for rescheduling later
-    await this.prisma.appointmentQueue.create({
-      data: {
-        doctorProfileId: app.doctorProfileId,
-        patientProfileId: app.patientProfileId,
-        appointmentId: app.id,
-        queueType: 'READY',
-        status: 'PENDING',
-      },
+      const queueEntry = await tx.appointmentQueue.findFirst({
+        where: {
+          appointmentId,
+          queueType: 'RESCHEDULE',
+          status: 'OFFERED',
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (queueEntry) {
+        await tx.appointmentQueue.update({
+          where: { id: queueEntry.id },
+          data: { status: 'REJECTED' },
+        });
+      }
+
+      // Keep/Place in waitlist/ready queue for rescheduling later
+      await tx.appointmentQueue.create({
+        data: {
+          doctorProfileId: app.doctorProfileId,
+          patientProfileId: app.patientProfileId,
+          appointmentId: app.id,
+          queueType: 'READY',
+          status: 'PENDING',
+        },
+      });
+
+      await this.notificationService.triggerNotification(
+        tx,
+        updated.id,
+        'APPOINTMENT_CANCELLED',
+      );
+
+      return updated;
     });
-
-    return updated;
   }
 
   // Join waitlist
@@ -1524,7 +1687,9 @@ export class AppointmentService {
     }
 
     if (queueEntry.patientProfile.userId !== patientUserId) {
-      throw new ForbiddenException('You do not have access to this waitlist entry');
+      throw new ForbiddenException(
+        'You do not have access to this waitlist entry',
+      );
     }
 
     if (queueEntry.status !== 'OFFERED') {
@@ -1546,7 +1711,10 @@ export class AppointmentService {
         });
       } else if (queueEntry.offeredWaveScheduleId) {
         const count = await tx.appointment.count({
-          where: { waveScheduleId: queueEntry.offeredWaveScheduleId, status: 'BOOKED' },
+          where: {
+            waveScheduleId: queueEntry.offeredWaveScheduleId,
+            status: 'BOOKED',
+          },
         });
 
         newApp = await tx.appointment.create({
@@ -1571,6 +1739,12 @@ export class AppointmentService {
         },
       });
 
+      await this.notificationService.triggerNotification(
+        tx,
+        newApp.id,
+        'APPOINTMENT_BOOKED',
+      );
+
       return newApp;
     });
   }
@@ -1587,7 +1761,9 @@ export class AppointmentService {
     }
 
     if (queueEntry.patientProfile.userId !== patientUserId) {
-      throw new ForbiddenException('You do not have access to this waitlist entry');
+      throw new ForbiddenException(
+        'You do not have access to this waitlist entry',
+      );
     }
 
     if (queueEntry.status !== 'OFFERED') {
