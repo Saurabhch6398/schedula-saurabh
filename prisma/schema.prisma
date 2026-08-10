@@ -157,6 +157,10 @@ model Appointment {
   reschedulingMetadata   String?            @map("rescheduling_metadata")
   isRescheduled          Boolean            @default(false) @map("is_rescheduled")
   rescheduleAccepted     Boolean?           @map("reschedule_accepted")
+  wasAutoRescheduled     Boolean            @default(false) @map("was_auto_rescheduled")
+  previousDate           String?            @map("previous_date")
+  previousStartTime      String?            @map("previous_start_time")
+  previousEndTime        String?            @map("previous_end_time")
   appointmentQueues      AppointmentQueue[]
 
   doctorProfile    DoctorProfile   @relation(fields: [doctorProfileId], references: [id], onDelete: Cascade)

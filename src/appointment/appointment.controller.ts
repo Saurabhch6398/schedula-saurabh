@@ -61,6 +61,18 @@ export class AppointmentController {
     };
   }
 
+  @Get('me')
+  @Roles('PATIENT')
+  async getMyAppointmentsMe(@Request() req: RequestWithUser) {
+    const data = await this.appointmentService.getMyAppointments(
+      req.user.userId,
+    );
+    return {
+      success: true,
+      data,
+    };
+  }
+
   @Get('upcoming')
   @Roles('PATIENT')
   async getUpcomingAppointments(@Request() req: RequestWithUser) {

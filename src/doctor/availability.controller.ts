@@ -18,6 +18,7 @@ import { AvailabilityService } from './availability.service';
 import { CreateAvailabilityDto } from './dto/create-availability.dto';
 import { UpdateAvailabilityDto } from './dto/update-availability.dto';
 import { CreateOverrideDto } from './dto/create-override.dto';
+import { ShrinkOverrideDto } from './dto/shrink-override.dto';
 
 interface RequestWithUser {
   user: {
@@ -84,6 +85,16 @@ export class AvailabilityController {
   }
 
   // 4. Parameterized routes
+  @Patch('override/shrink/:id')
+  @Roles('DOCTOR')
+  async shrinkOverride(
+    @Request() req: RequestWithUser,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: ShrinkOverrideDto,
+  ) {
+    return this.availabilityService.shrinkOverride(req.user.userId, id, dto);
+  }
+
   @Patch(':id')
   @Roles('DOCTOR')
   async updateRecurring(
