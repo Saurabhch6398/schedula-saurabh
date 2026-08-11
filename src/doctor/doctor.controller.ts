@@ -126,3 +126,16 @@ export class DoctorController {
     };
   }
 }
+
+@Controller('patient/doctors')
+@UseGuards(AuthGuard, RolesGuard)
+@Roles('PATIENT')
+export class PatientDoctorController {
+  constructor(private readonly doctorService: DoctorService) {}
+
+  @Get()
+  async getAllDoctors() {
+    return this.doctorService.getAllDoctors();
+  }
+}
+

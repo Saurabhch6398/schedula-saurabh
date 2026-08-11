@@ -1,0 +1,26 @@
+$kind: http-request
+url: "{{baseUrl}}/notifications/:id/read"
+method: PATCH
+auth:
+  type: bearer
+  credentials:
+    token: "{{jwtToken}}"
+params:
+  - key: id
+    value: "1"
+    description: The notification ID
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status code is 200 or 404/403 depending on existence", function () {
+          // If the notification ID 1 exists and belongs to the user, we get 200
+          if (pm.response.code === 200) {
+              const response = pm.response.json();
+              pm.expect(response.success).to.be.true;
+              pm.expect(response.message).to.equal("Notification marked as read successfully");
+          } else {
+              pm.expect(pm.response.code).to.be.oneOf([403, 404]);
+          }
+      });
+    language: text/javascript
+order: 2000

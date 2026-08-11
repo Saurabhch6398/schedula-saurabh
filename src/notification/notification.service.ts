@@ -145,4 +145,40 @@ export class NotificationService {
       data: { isRead: true },
     });
   }
+
+  /**
+   * Marks all notifications as read for the given user.
+   */
+  async markAllAsRead(userId: number) {
+    await this.prisma.notification.updateMany({
+      where: { userId, isRead: false },
+      data: { isRead: true },
+    });
+    return { message: 'All notifications marked as read' };
+  }
+
+  /**
+   * Deletes a notification after confirming user ownership.
+   */
+  async deleteNotification(userId: number, notificationId: number) {
+    const notification = await this.prisma.notification.findUnique({
+      where: { id: notificationId },
+    });
+
+    if (!notification) {
+      throw new NotFoundException('Notification not found');
+    }
+
+    if (notification.userId !== userId) {
+      throw new ForbiddenException(
+        'You do not have access to delete this notification',
+      );
+    }
+
+    await this.prisma.notification.delete({
+      where: { id: notificationId },
+    });
+    return { message: 'Notification deleted successfully' };
+  }
 }
+

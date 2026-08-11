@@ -1,0 +1,20 @@
+$kind: http-request
+url: "{{baseUrl}}/notifications"
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{jwtToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status code is 200", function () {
+          pm.response.to.have.status(200);
+      });
+      pm.test("Check notifications schema", function () {
+          const response = pm.response.json();
+          pm.expect(response.success).to.be.true;
+          pm.expect(response.data).to.be.an("array");
+      });
+    language: text/javascript
+order: 1000

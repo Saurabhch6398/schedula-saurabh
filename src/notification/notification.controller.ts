@@ -2,6 +2,9 @@ import {
   Controller,
   Get,
   Patch,
+  Delete,
+  HttpCode,
+  HttpStatus,
   Param,
   UseGuards,
   Request,
@@ -18,7 +21,7 @@ interface RequestWithUser {
   };
 }
 
-@Controller(['notifications', 'notification'])
+@Controller(['notifications', 'notification', 'patient/notifications'])
 @UseGuards(AuthGuard)
 export class NotificationController {
   constructor(private readonly notificationService: NotificationService) {}
@@ -34,6 +37,16 @@ export class NotificationController {
     };
   }
 
+  @Patch('read-all')
+  @HttpCode(HttpStatus.OK)
+  async markAllAsRead(@Request() req: RequestWithUser) {
+    const data = await this.notificationService.markAllAsRead(req.user.userId);
+    return {
+      success: true,
+      ...data,
+    };
+  }
+
   @Patch(':id/read')
   async markAsRead(
     @Request() req: RequestWithUser,
@@ -46,4 +59,21 @@ export class NotificationController {
       data,
     };
   }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.OK)
+  async deleteNotification(
+    @Request() req: RequestWithUser,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    const data = await this.notificationService.deleteNotification(
+      req.user.userId,
+      id,
+    );
+    return {
+      success: true,
+      ...data,
+    };
+  }
 }
+

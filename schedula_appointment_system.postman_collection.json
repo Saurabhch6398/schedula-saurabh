@@ -7,7 +7,7 @@
   },
   "item": [
     {
-      "name": "Authentication",
+      "name": "1. Authentication",
       "item": [
         {
           "name": "Doctor Signup",
@@ -62,7 +62,7 @@
           "response": []
         },
         {
-          "name": "Login",
+          "name": "Doctor Login",
           "event": [
             {
               "listen": "test",
@@ -70,8 +70,8 @@
                 "exec": [
                   "const responseJson = pm.response.json();",
                   "if (responseJson.token) {",
-                  "    pm.globals.set(\"token\", responseJson.token);",
-                  "    console.log(\"Authorization Token updated globally!\");",
+                  "    pm.globals.set(\"doctor_token\", responseJson.token);",
+                  "    console.log(\"Doctor token updated!\");",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -101,21 +101,62 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Patient Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const responseJson = pm.response.json();",
+                  "if (responseJson.token) {",
+                  "    pm.globals.set(\"patient_token\", responseJson.token);",
+                  "    console.log(\"Patient token updated!\");",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"tony.stark@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "login"
+              ]
+            }
+          },
+          "response": []
         }
       ]
     },
     {
-      "name": "Profiles & Scheduling Setup (Doctor)",
+      "name": "2. STREAM Scheduling Flow",
       "item": [
         {
-          "name": "Create Doctor Profile (Onboarding)",
+          "name": "Create Doctor Profile",
           "request": {
             "auth": {
               "type": "bearer",
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token}}",
+                  "value": "{{doctor_token}}",
                   "type": "string"
                 }
               ]
@@ -152,7 +193,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token}}",
+                  "value": "{{doctor_token}}",
                   "type": "string"
                 }
               ]
@@ -170,7 +211,22 @@
               ]
             }
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const responseJson = pm.response.json();",
+                  "if (responseJson.id) {",
+                  "    pm.globals.set(\"doctorId\", responseJson.id);",
+                  "    console.log(\"Doctor ID set to \" + responseJson.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
         },
         {
           "name": "Update Doctor Profile",
@@ -180,7 +236,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token}}",
+                  "value": "{{doctor_token}}",
                   "type": "string"
                 }
               ]
@@ -217,7 +273,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token}}",
+                  "value": "{{doctor_token}}",
                   "type": "string"
                 }
               ]
@@ -247,51 +303,14 @@
           "response": []
         },
         {
-          "name": "Select Scheduling Type (WAVE)",
+          "name": "Create STREAM Availability",
           "request": {
             "auth": {
               "type": "bearer",
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"type\": \"WAVE\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/doctor/scheduling",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "doctor",
-                "scheduling"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Create Availability Window (STREAM/WAVE)",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
+                  "value": "{{doctor_token}}",
                   "type": "string"
                 }
               ]
@@ -305,7 +324,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"dayOfWeek\": \"TUESDAY\",\n  \"startTime\": \"10:00\",\n  \"endTime\": \"12:00\",\n  \"maxCapacity\": 5\n}"
+              "raw": "{\n  \"dayOfWeek\": \"TUESDAY\",\n  \"startTime\": \"10:00\",\n  \"endTime\": \"12:00\",\n  \"maxCapacity\": 5,\n  \"date\": \"2026-09-22\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/doctor/availability",
@@ -321,93 +340,63 @@
           "response": []
         },
         {
-          "name": "Get Doctor Availability (Doctor View)",
+          "name": "Get STREAM Availability",
           "request": {
             "auth": {
               "type": "bearer",
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token}}",
+                  "value": "{{doctor_token}}",
                   "type": "string"
                 }
               ]
             },
             "method": "GET",
-            "header": [],
             "url": {
-              "raw": "{{base_url}}/doctor/availability",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "doctor",
-                "availability"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Shrink Custom Override",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"startTime\": \"03:00 PM\",\n  \"endTime\": \"04:00 PM\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/doctor/availability/override/shrink/:id",
+              "raw": "{{base_url}}/doctor/availability/date?date=2026-09-22",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "doctor",
                 "availability",
-                "override",
-                "shrink",
-                ":id"
+                "date"
               ],
-              "variable": [
+              "query": [
                 {
-                  "key": "id",
-                  "value": "1"
+                  "key": "date",
+                  "value": "2026-09-22"
                 }
               ]
             }
           },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const responseJson = pm.response.json();",
+                  "if (responseJson && responseJson.length > 0) {",
+                  "    pm.globals.set(\"availabilityId\", responseJson[0].id);",
+                  "    console.log(\"STREAM Availability ID set to \" + responseJson[0].id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "response": []
-        }
-      ]
-    },
-    {
-      "name": "Profiles & Booking (Patient)",
-      "item": [
+        },
         {
-          "name": "Create/Update Patient Profile",
+          "name": "Create Patient Profile",
           "request": {
             "auth": {
               "type": "bearer",
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token}}",
+                  "value": "{{patient_token}}",
                   "type": "string"
                 }
               ]
@@ -437,40 +426,33 @@
           "response": []
         },
         {
-          "name": "View Doctor Slots (Patient view)",
+          "name": "View Doctor Slots (Patient View)",
           "request": {
             "auth": {
               "type": "bearer",
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token}}",
+                  "value": "{{patient_token}}",
                   "type": "string"
                 }
               ]
             },
             "method": "GET",
-            "header": [],
             "url": {
-              "raw": "{{base_url}}/doctor/:doctorId/slots?date=2026-09-20",
+              "raw": "{{base_url}}/doctor/{{doctorId}}/slots?date=2026-09-22",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "doctor",
-                ":doctorId",
+                "{{doctorId}}",
                 "slots"
               ],
               "query": [
                 {
                   "key": "date",
-                  "value": "2026-09-20"
-                }
-              ],
-              "variable": [
-                {
-                  "key": "doctorId",
-                  "value": "1"
+                  "value": "2026-09-22"
                 }
               ]
             }
@@ -478,14 +460,14 @@
           "response": []
         },
         {
-          "name": "Book Appointment (STREAM)",
+          "name": "Book STREAM Appointment",
           "request": {
             "auth": {
               "type": "bearer",
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token}}",
+                  "value": "{{patient_token}}",
                   "type": "string"
                 }
               ]
@@ -499,7 +481,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"doctorId\": 1,\n  \"date\": \"2026-09-20\",\n  \"startTime\": \"10:00\",\n  \"endTime\": \"10:15\",\n  \"bookingSource\": \"ONLINE\"\n}"
+              "raw": "{\n  \"doctorId\": {{doctorId}},\n  \"date\": \"2026-09-22\",\n  \"startTime\": \"10:00\",\n  \"endTime\": \"10:15\",\n  \"bookingSource\": \"ONLINE\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/appointment",
@@ -511,43 +493,23 @@
               ]
             }
           },
-          "response": []
-        },
-        {
-          "name": "Book Appointment (WAVE)",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const responseJson = pm.response.json();",
+                  "const appData = responseJson.data || responseJson;",
+                  "if (appData && appData.id) {",
+                  "    pm.globals.set(\"appointmentId\", appData.id);",
+                  "    console.log(\"Appointment ID set to \" + appData.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
               }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"doctorId\": 1,\n  \"waveId\": 1,\n  \"bookingSource\": \"ONLINE\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/appointment",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "appointment"
-              ]
             }
-          },
-          "response": []
+          ]
         },
         {
           "name": "Get My Appointments (All)",
@@ -557,7 +519,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token}}",
+                  "value": "{{patient_token}}",
                   "type": "string"
                 }
               ]
@@ -585,7 +547,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token}}",
+                  "value": "{{patient_token}}",
                   "type": "string"
                 }
               ]
@@ -613,7 +575,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token}}",
+                  "value": "{{patient_token}}",
                   "type": "string"
                 }
               ]
@@ -641,7 +603,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token}}",
+                  "value": "{{patient_token}}",
                   "type": "string"
                 }
               ]
@@ -662,99 +624,6 @@
           "response": []
         },
         {
-          "name": "Reschedule Appointment",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"date\": \"2026-09-20\",\n  \"startTime\": \"11:00\",\n  \"endTime\": \"11:15\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/appointment/:id/reschedule",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "appointment",
-                ":id",
-                "reschedule"
-              ],
-              "variable": [
-                {
-                  "key": "id",
-                  "value": "1"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Cancel Appointment",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"cancellationReason\": \"Scheduling conflict\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/appointment/:id/cancel",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "appointment",
-                ":id",
-                "cancel"
-              ],
-              "variable": [
-                {
-                  "key": "id",
-                  "value": "1"
-                }
-              ]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Doctor Management & Complete Notes",
-      "item": [
-        {
           "name": "Get Doctor Appointments (Filtered/Paginated)",
           "request": {
             "auth": {
@@ -762,15 +631,14 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token}}",
+                  "value": "{{doctor_token}}",
                   "type": "string"
                 }
               ]
             },
             "method": "GET",
-            "header": [],
             "url": {
-              "raw": "{{base_url}}/doctor/appointments?date=2026-09-20&status=BOOKED&page=1&limit=10&sort=date",
+              "raw": "{{base_url}}/doctor/appointments?date=2026-09-22&status=BOOKED&page=1&limit=10&sort=date",
               "host": [
                 "{{base_url}}"
               ],
@@ -781,7 +649,7 @@
               "query": [
                 {
                   "key": "date",
-                  "value": "2026-09-20"
+                  "value": "2026-09-22"
                 },
                 {
                   "key": "status",
@@ -812,7 +680,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token}}",
+                  "value": "{{doctor_token}}",
                   "type": "string"
                 }
               ]
@@ -820,20 +688,15 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/appointment/:id",
+              "raw": "{{base_url}}/appointment/{{appointmentId}}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "appointment",
-                ":id"
+                "{{appointmentId}}"
               ],
-              "variable": [
-                {
-                  "key": "id",
-                  "value": "1"
-                }
-              ]
+              "variable": []
             }
           },
           "response": []
@@ -846,7 +709,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token}}",
+                  "value": "{{doctor_token}}",
                   "type": "string"
                 }
               ]
@@ -863,21 +726,369 @@
               "raw": "{\n  \"diagnosis\": \"Elevated heart rate & minor radiation fatigue\",\n  \"prescription\": \"Take rest, consume extra hydration, avoid stressful workloads\",\n  \"followUp\": \"Return for observation in two weeks\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/appointment/:id/complete",
+              "raw": "{{base_url}}/appointment/{{appointmentId}}/complete",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "appointment",
-                ":id",
+                "{{appointmentId}}",
                 "complete"
               ],
-              "variable": [
+              "variable": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Notifications",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
                 {
-                  "key": "id",
-                  "value": "1"
+                  "key": "token",
+                  "value": "{{patient_token}}",
+                  "type": "string"
                 }
               ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/notifications",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notifications"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Mark Notification as Read",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{patient_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "url": {
+              "raw": "{{base_url}}/notifications/{{appointmentId}}/read",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notifications",
+                "{{appointmentId}}",
+                "read"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. WAVE Scheduling Flow",
+      "item": [
+        {
+          "name": "Select Scheduling Type (WAVE)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{doctor_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"WAVE\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/doctor/scheduling",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctor",
+                "scheduling"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create WAVE Availability",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{doctor_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dayOfWeek\": \"TUESDAY\",\n  \"startTime\": \"10:00\",\n  \"endTime\": \"12:00\",\n  \"maxCapacity\": 5,\n  \"date\": \"2026-09-22\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/doctor/availability",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctor",
+                "availability"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get WAVE Availability",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{doctor_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/doctor/availability/date?date=2026-09-22",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctor",
+                "availability",
+                "date"
+              ],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "2026-09-22"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const responseJson = pm.response.json();",
+                  "if (responseJson && responseJson.length > 0) {",
+                  "    pm.globals.set(\"availabilityId\", responseJson[0].id);",
+                  "    console.log(\"WAVE Availability ID set to \" + responseJson[0].id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Book WAVE Appointment",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{patient_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"doctorId\": {{doctorId}},\n  \"waveId\": {{availabilityId}},\n  \"bookingSource\": \"ONLINE\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/appointment",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointment"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const responseJson = pm.response.json();",
+                  "const appData = responseJson.data || responseJson;",
+                  "if (appData && appData.id) {",
+                  "    pm.globals.set(\"appointmentId\", appData.id);",
+                  "    console.log(\"Appointment ID set to \" + appData.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reschedule Appointment",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{patient_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2026-09-22\",\n  \"startTime\": \"11:00\",\n  \"endTime\": \"11:15\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/appointment/{{appointmentId}}/reschedule",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointment",
+                "{{appointmentId}}",
+                "reschedule"
+              ],
+              "variable": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Appointment",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{patient_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cancellationReason\": \"Scheduling conflict\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/appointment/{{appointmentId}}/cancel",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointment",
+                "{{appointmentId}}",
+                "cancel"
+              ],
+              "variable": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Shrink Custom Override",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{doctor_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"startTime\": \"03:00 PM\",\n  \"endTime\": \"04:00 PM\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/doctor/availability/override/shrink/{{availabilityId}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctor",
+                "availability",
+                "override",
+                "shrink",
+                "{{availabilityId}}"
+              ],
+              "variable": []
             }
           },
           "response": []
