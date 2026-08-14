@@ -8,6 +8,7 @@ import { PatientModule } from './patient/patient.module';
 import { AppointmentModule } from './appointment/appointment.module';
 import { NotificationModule } from './notification/notification.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ReminderModule } from './reminder/reminder.module';
 
 import { APP_FILTER } from '@nestjs/core';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -21,6 +22,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
     PatientModule,
     AppointmentModule,
     NotificationModule,
+    ReminderModule,
   ],
   controllers: [AppController],
   providers: [

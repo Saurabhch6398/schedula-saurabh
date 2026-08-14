@@ -12,7 +12,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { AppointmentService } from './appointment.service';
-import { ReminderService } from './reminder.service';
+import { ReminderService } from '../reminder/reminder.service';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';

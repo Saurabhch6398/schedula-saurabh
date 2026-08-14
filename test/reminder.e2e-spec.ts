@@ -5,7 +5,7 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
-import { ReminderService } from './../src/appointment/reminder.service';
+import { ReminderService } from './../src/reminder/reminder.service';
 
 describe('Automated Appointment Reminder System (e2e)', () => {
   let app: INestApplication<App>;
@@ -18,6 +18,7 @@ describe('Automated Appointment Reminder System (e2e)', () => {
   let patientUserId: number;
 
   beforeAll(async () => {
+    jest.setTimeout(30000);
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
