@@ -219,3 +219,38 @@ flowchart TD
 
 ![Elastic Scheduling 2D Architecture Diagram](file:///C:/Users/chauh/.gemini/antigravity-ide/brain/e6ebfbee-cba1-4a6e-a018-c39637fd9c22/elastic_scheduling_diagram_1785769934068.png)
 
+---
+
+## Automated Appointment Reminder & Cron Job Execution Flow
+
+### Process Flowchart
+```mermaid
+flowchart TD
+    classDef init fill:#e1f5fe,stroke:#0288d1,stroke-width:1px;
+    classDef query fill:#fff9c4,stroke:#fbc02d,stroke-width:1px;
+    classDef decision fill:#fff9c4,stroke:#fbc02d,stroke-width:2px;
+    classDef process fill:#e8f5e9,stroke:#2e7d32,stroke-width:1px;
+    classDef skip fill:#eceff1,stroke:#607d8b,stroke-width:1px;
+
+    CronTrigger([Cron Trigger: periodic execution / API manual trigger]):::init
+    CronTrigger --> FetchAppointments["Query BOOKED appointments with slotStart between now and now + window"]:::query
+    FetchAppointments --> LoopStart{For each appointment}:::decision
+
+    LoopStart -->|Next| CheckReminderExists{"APPOINTMENT_REMINDER notification already exists?"}:::decision
+    
+    CheckReminderExists -->|Yes| SkipApp["Skip appointment (avoid duplicate)"]:::skip
+    CheckReminderExists -->|No| CheckType{"Appointment type?"}:::decision
+
+    CheckType -->|STREAM| FormatStream["Format message: Doctor Name, Appointment Date, Appointment Time"]:::process
+    CheckType -->|WAVE| FormatWave["Format message: Doctor Name, Reporting Time, Token Number"]:::process
+
+    FormatStream --> SaveNotif["Save APPOINTMENT_REMINDER notification to DB"]:::process
+    FormatWave --> SaveNotif
+    
+    SaveNotif --> NextIter["Go to next appointment"]:::process
+    SkipApp --> NextIter
+    NextIter --> LoopStart
+    
+    LoopStart -->|Done| EndProcess([End process & return count]):::init
+```
+

@@ -8,7 +8,11 @@ import { AppointmentModule } from '../appointment/appointment.module';
 
 @Module({
   imports: [AppointmentModule],
-  controllers: [DoctorController, AvailabilityController, PatientDoctorController],
+  controllers: [
+    DoctorController,
+    AvailabilityController,
+    PatientDoctorController,
+  ],
   providers: [DoctorService, AvailabilityService, AvailabilityRepository],
 })
 export class DoctorModule {}

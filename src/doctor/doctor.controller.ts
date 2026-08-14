@@ -138,4 +138,3 @@ export class PatientDoctorController {
     return this.doctorService.getAllDoctors();
   }
 }
-

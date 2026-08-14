@@ -7,10 +7,10 @@
   },
   "item": [
     {
-      "name": "1. Authentication",
+      "name": "01. Authentication",
       "item": [
         {
-          "name": "Doctor Signup",
+          "name": "Signup Doctor",
           "request": {
             "method": "POST",
             "header": [
@@ -19,65 +19,37 @@
                 "value": "application/json"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Dr. Bruce Banner\",\n  \"email\": \"doctor.banner@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"DOCTOR\"\n}"
-            },
             "url": {
-              "raw": "{{base_url}}/signup",
+              "raw": "{{baseUrl}}/signup",
               "host": [
-                "{{base_url}}"
+                "{{baseUrl}}"
               ],
               "path": [
                 "signup"
               ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Patient Signup",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Tony Stark\",\n  \"email\": \"tony.stark@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"PATIENT\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/signup",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "signup"
-              ]
+              "raw": "{\n    \"name\": \"Dr. Rahul Sharma\",\n    \"email\": \"rahul.sharma@example.com\",\n    \"password\": \"password123\",\n    \"role\": \"DOCTOR\"\n}"
             }
           },
-          "response": []
-        },
-        {
-          "name": "Doctor Login",
+          "response": [],
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "const responseJson = pm.response.json();",
-                  "if (responseJson.token) {",
-                  "    pm.globals.set(\"doctor_token\", responseJson.token);",
-                  "    console.log(\"Doctor token updated!\");",
-                  "}"
+                  "pm.test(\"Status code is 201 or 409\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201, 409]);",
+                  "});"
                 ],
                 "type": "text/javascript"
               }
             }
-          ],
+          ]
+        },
+        {
+          "name": "Signup Patient",
           "request": {
             "method": "POST",
             "header": [
@@ -86,39 +58,37 @@
                 "value": "application/json"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"doctor.banner@example.com\",\n  \"password\": \"password123\"\n}"
-            },
             "url": {
-              "raw": "{{base_url}}/login",
+              "raw": "{{baseUrl}}/signup",
               "host": [
-                "{{base_url}}"
+                "{{baseUrl}}"
               ],
               "path": [
-                "login"
+                "signup"
               ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Amit Kumar\",\n    \"email\": \"amit.kumar@example.com\",\n    \"password\": \"password123\",\n    \"role\": \"PATIENT\"\n}"
             }
           },
-          "response": []
-        },
-        {
-          "name": "Patient Login",
+          "response": [],
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "const responseJson = pm.response.json();",
-                  "if (responseJson.token) {",
-                  "    pm.globals.set(\"patient_token\", responseJson.token);",
-                  "    console.log(\"Patient token updated!\");",
-                  "}"
+                  "pm.test(\"Status code is 201 or 409\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201, 409]);",
+                  "});"
                 ],
                 "type": "text/javascript"
               }
             }
-          ],
+          ]
+        },
+        {
+          "name": "Login Doctor",
           "request": {
             "method": "POST",
             "header": [
@@ -127,87 +97,114 @@
                 "value": "application/json"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"tony.stark@example.com\",\n  \"password\": \"password123\"\n}"
-            },
             "url": {
-              "raw": "{{base_url}}/login",
+              "raw": "{{baseUrl}}/login",
               "host": [
-                "{{base_url}}"
+                "{{baseUrl}}"
               ],
               "path": [
                 "login"
               ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"rahul.sharma@example.com\",\n    \"password\": \"password123\"\n}"
             }
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Login Successful and Token Saved\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.message).to.equal(\"Login Successful\");",
+                  "    pm.expect(response.token).to.not.be.undefined;",
+                  "    pm.collectionVariables.set(\"jwtToken\", response.token);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Patient",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"amit.kumar@example.com\",\n    \"password\": \"password123\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Login Successful and Token Saved\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.message).to.equal(\"Login Successful\");",
+                  "    pm.expect(response.token).to.not.be.undefined;",
+                  "    pm.collectionVariables.set(\"jwtToken\", response.token);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
         }
       ]
     },
     {
-      "name": "2. STREAM Scheduling Flow",
+      "name": "02. Doctor Profile & Settings",
       "item": [
         {
-          "name": "Create Doctor Profile",
+          "name": "Get Profile (Before Onboarding)",
           "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{doctor_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"fullName\": \"Dr. Bruce Banner\",\n  \"specialization\": \"Gamma Radiation & Endocrinology\",\n  \"experience\": 12,\n  \"qualification\": \"M.D., Ph.D.\",\n  \"consultationFee\": 350,\n  \"availability\": \"Mon-Fri 9AM-5PM\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/doctor/profile",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "doctor",
-                "profile"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get Doctor Profile",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{doctor_token}}",
-                  "type": "string"
-                }
-              ]
-            },
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/doctor/profile",
+              "raw": "{{baseUrl}}/doctor/profile",
               "host": [
-                "{{base_url}}"
+                "{{baseUrl}}"
               ],
               "path": [
                 "doctor",
                 "profile"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
               ]
             }
           },
@@ -217,11 +214,13 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "const responseJson = pm.response.json();",
-                  "if (responseJson.id) {",
-                  "    pm.globals.set(\"doctorId\", responseJson.id);",
-                  "    console.log(\"Doctor ID set to \" + responseJson.id);",
-                  "}"
+                  "pm.test(\"Status code is 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "pm.test(\"Profile not found message\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.message).to.equal(\"Profile not found\");",
+                  "});"
                 ],
                 "type": "text/javascript"
               }
@@ -229,92 +228,8 @@
           ]
         },
         {
-          "name": "Update Doctor Profile",
+          "name": "Create Profile (Onboarding)",
           "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{doctor_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"consultationFee\": 400,\n  \"availability\": \"Mon-Fri 10AM-4PM\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/doctor/profile",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "doctor",
-                "profile"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Select Scheduling Type (STREAM)",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{doctor_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"type\": \"STREAM\",\n  \"slotDuration\": 15,\n  \"bufferTime\": 5\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/doctor/scheduling",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "doctor",
-                "scheduling"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Create STREAM Availability",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{doctor_token}}",
-                  "type": "string"
-                }
-              ]
-            },
             "method": "POST",
             "header": [
               {
@@ -322,41 +237,567 @@
                 "value": "application/json"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"dayOfWeek\": \"TUESDAY\",\n  \"startTime\": \"10:00\",\n  \"endTime\": \"12:00\",\n  \"maxCapacity\": 5,\n  \"date\": \"2026-09-22\"\n}"
-            },
             "url": {
-              "raw": "{{base_url}}/doctor/availability",
+              "raw": "{{baseUrl}}/doctor/profile",
               "host": [
-                "{{base_url}}"
+                "{{baseUrl}}"
               ],
               "path": [
                 "doctor",
-                "availability"
+                "profile"
               ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get STREAM Availability",
-          "request": {
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"fullName\": \"Dr. Rahul Sharma\",\n    \"specialization\": \"Cardiologist\",\n    \"experience\": 8,\n    \"qualification\": \"MBBS, MD\",\n    \"consultationFee\": 1000,\n    \"availability\": \"Mon-Fri 10AM-5PM\",\n    \"profileDetails\": \"Heart specialist with 8 years of experience.\"\n}"
+            },
             "auth": {
               "type": "bearer",
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{doctor_token}}",
+                  "value": "{{jwtToken}}",
                   "type": "string"
                 }
               ]
-            },
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"Profile creation successful\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.message).to.equal(\"Doctor profile created successfully\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Profile (After Onboarding)",
+          "request": {
             "method": "GET",
+            "header": [],
             "url": {
-              "raw": "{{base_url}}/doctor/availability/date?date=2026-09-22",
+              "raw": "{{baseUrl}}/doctor/profile",
               "host": [
-                "{{base_url}}"
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "doctor",
+                "profile"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Check profile properties\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.fullName).to.equal(\"Dr. Rahul Sharma\");",
+                  "    pm.expect(response.specialization).to.equal(\"Cardiologist\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/doctor/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "doctor",
+                "profile"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"consultationFee\": 1200,\n    \"availability\": \"9AM-3PM\"\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Update success check\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.message).to.equal(\"Doctor profile updated successfully\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Scheduling Strategy",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/doctor/scheduling",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "doctor",
+                "scheduling"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"type\": \"STREAM\",\n    \"slotDuration\": 15,\n    \"bufferTime\": 5\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Scheduling update successful\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.message).to.equal(\"Scheduling updated successfully\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Attempt Patient Profile (Access Protection)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/patient/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patient",
+                "profile"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"fullName\": \"Illegal Access\",\n    \"age\": 30,\n    \"gender\": \"Male\",\n    \"contact\": \"9999999999\"\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 403\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "pm.test(\"Access denied message\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.message).to.equal(\"Access denied\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03. Doctor Availability Management",
+      "item": [
+        {
+          "name": "Create Recurring Availability",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/doctor/availability",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "doctor",
+                "availability"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"dayOfWeek\": \"MONDAY\",\n    \"startTime\": \"10:00 AM\",\n    \"endTime\": \"01:00 PM\"\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Recurring Availability",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/doctor/availability",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "doctor",
+                "availability"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Recurring Availability",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/doctor/availability/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "doctor",
+                "availability",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"startTime\": \"09:00 AM\",\n    \"endTime\": \"12:00 PM\"\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Recurring Availability",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/doctor/availability/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "doctor",
+                "availability",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Custom Override",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/doctor/availability/override",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "doctor",
+                "availability",
+                "override"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"date\": \"2026-06-15\",\n    \"startTime\": \"02:00 PM\",\n    \"endTime\": \"03:00 PM\"\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Custom Override",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/doctor/availability/override?date=2026-06-15",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "doctor",
+                "availability",
+                "override"
+              ],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "2026-06-15"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Availability for Date",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/doctor/availability/date?date=2026-06-15&doctorId=1",
+              "host": [
+                "{{baseUrl}}"
               ],
               "path": [
                 "doctor",
@@ -366,130 +807,22 @@
               "query": [
                 {
                   "key": "date",
-                  "value": "2026-09-22"
+                  "value": "2026-06-15"
+                },
+                {
+                  "key": "doctorId",
+                  "value": "1"
                 }
               ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const responseJson = pm.response.json();",
-                  "if (responseJson && responseJson.length > 0) {",
-                  "    pm.globals.set(\"availabilityId\", responseJson[0].id);",
-                  "    console.log(\"STREAM Availability ID set to \" + responseJson[0].id);",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "response": []
-        },
-        {
-          "name": "Create Patient Profile",
-          "request": {
+            },
             "auth": {
               "type": "bearer",
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{patient_token}}",
+                  "value": "{{jwtToken}}",
                   "type": "string"
                 }
-              ]
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"fullName\": \"Tony Stark\",\n  \"age\": 45,\n  \"gender\": \"Male\",\n  \"contact\": \"9998887776\",\n  \"healthInfo\": \"Heart reactor implant\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/patient/profile",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "patient",
-                "profile"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "View Doctor Slots (Patient View)",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{patient_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "url": {
-              "raw": "{{base_url}}/doctor/{{doctorId}}/slots?date=2026-09-22",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "doctor",
-                "{{doctorId}}",
-                "slots"
-              ],
-              "query": [
-                {
-                  "key": "date",
-                  "value": "2026-09-22"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Book STREAM Appointment",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{patient_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"doctorId\": {{doctorId}},\n  \"date\": \"2026-09-22\",\n  \"startTime\": \"10:00\",\n  \"endTime\": \"10:15\",\n  \"bookingSource\": \"ONLINE\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/appointment",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "appointment"
               ]
             }
           },
@@ -499,12 +832,9 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "const responseJson = pm.response.json();",
-                  "const appData = responseJson.data || responseJson;",
-                  "if (appData && appData.id) {",
-                  "    pm.globals.set(\"appointmentId\", appData.id);",
-                  "    console.log(\"Appointment ID set to \" + appData.id);",
-                  "}"
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
                 ],
                 "type": "text/javascript"
               }
@@ -512,135 +842,1173 @@
           ]
         },
         {
-          "name": "Get My Appointments (All)",
+          "name": "Shrink Custom Override",
           "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/doctor/availability/override/shrink/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "doctor",
+                "availability",
+                "override",
+                "shrink",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"startTime\": \"03:00 PM\",\n    \"endTime\": \"04:00 PM\"\n}"
+            },
             "auth": {
               "type": "bearer",
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{patient_token}}",
+                  "value": "{{jwtToken}}",
                   "type": "string"
                 }
               ]
-            },
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04. Patient Profile",
+      "item": [
+        {
+          "name": "Get Profile (Before Onboarding)",
+          "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/appointment/my",
+              "raw": "{{baseUrl}}/patient/profile",
               "host": [
-                "{{base_url}}"
+                "{{baseUrl}}"
               ],
               "path": [
-                "appointment",
-                "my"
+                "patient",
+                "profile"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
               ]
             }
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "pm.test(\"Profile not found message\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.message).to.equal(\"Profile not found\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Profile (Onboarding)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/patient/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patient",
+                "profile"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"fullName\": \"Amit Kumar\",\n    \"age\": 24,\n    \"gender\": \"Male\",\n    \"contact\": \"9876543210\",\n    \"healthInfo\": \"Diabetic\"\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"Profile creation successful\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.message).to.equal(\"Patient profile created successfully\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Profile (After Onboarding)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/patient/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patient",
+                "profile"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Check profile properties\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.fullName).to.equal(\"Amit Kumar\");",
+                  "    pm.expect(response.age).to.equal(24);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/patient/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patient",
+                "profile"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"healthInfo\": \"Diabetic, under treatment\"\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Update success check\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.message).to.equal(\"Patient profile updated successfully\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Attempt Doctor Profile (Access Protection)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/doctor/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "doctor",
+                "profile"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"fullName\": \"Illegal Access\",\n    \"specialization\": \"Cardiologist\",\n    \"experience\": 8,\n    \"qualification\": \"MBBS, MD\",\n    \"consultationFee\": 1000,\n    \"availability\": \"Mon-Fri 10AM-5PM\"\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 403\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "pm.test(\"Access denied message\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.message).to.equal(\"Access denied\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "05. Patient - Search & Doctor Schedules",
+      "item": [
+        {
+          "name": "Get All Doctors",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/patient/doctors",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patient",
+                "doctors"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Doctor Availability (Public/Patient)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/doctor/:id/availability?date=2030-08-20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "doctor",
+                ":id",
+                "availability"
+              ],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "2030-08-20"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Doctor Stream Slots",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/doctor/:id/slots?date=2030-08-20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "doctor",
+                ":id",
+                "slots"
+              ],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "2030-08-20"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Should return slots array\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.be.an(\"array\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Doctor Wave Windows",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/doctor/:id/waves?date=2030-08-20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "doctor",
+                ":id",
+                "waves"
+              ],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "2030-08-20"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Should return waves array\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.be.an(\"array\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "06. Appointment Booking & Workflows",
+      "item": [
+        {
+          "name": "Book Stream Appointment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/appointments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "appointments"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"doctorId\": 1,\n    \"slot\": \"10:00\",\n    \"date\": \"2030-08-20\"\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"Appointment details correct\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.data.appointmentType).to.equal(\"STREAM\");",
+                  "    pm.expect(response.data.doctorId).to.equal(1);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Book Wave Appointment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/appointments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "appointments"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"doctorId\": 1,\n    \"waveId\": 1\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201 or 409\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201, 409]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get My Appointments (my)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/appointments/my",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "appointments",
+                "my"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Should return success and appointments data\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "    pm.expect(response.data).to.be.an(\"array\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
         },
         {
           "name": "Get My Appointments (me)",
           "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{patient_token}}",
-                  "type": "string"
-                }
-              ]
-            },
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/appointments/me",
+              "raw": "{{baseUrl}}/appointments/me",
               "host": [
-                "{{base_url}}"
+                "{{baseUrl}}"
               ],
               "path": [
                 "appointments",
                 "me"
               ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get My Appointments (Upcoming)",
-          "request": {
+            },
             "auth": {
               "type": "bearer",
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{patient_token}}",
+                  "value": "{{jwtToken}}",
                   "type": "string"
                 }
               ]
-            },
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Should return success and appointments data\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "    pm.expect(response.data).to.be.an(\"array\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Upcoming Appointments",
+          "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/appointment/upcoming",
+              "raw": "{{baseUrl}}/appointments/upcoming",
               "host": [
-                "{{base_url}}"
+                "{{baseUrl}}"
               ],
               "path": [
-                "appointment",
+                "appointments",
                 "upcoming"
               ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get My Appointments (History)",
-          "request": {
+            },
             "auth": {
               "type": "bearer",
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{patient_token}}",
+                  "value": "{{jwtToken}}",
                   "type": "string"
                 }
               ]
-            },
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Should return success and data\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "    pm.expect(response.data).to.be.an(\"array\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Appointment History",
+          "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/appointment/history",
+              "raw": "{{baseUrl}}/appointments/history",
               "host": [
-                "{{base_url}}"
+                "{{baseUrl}}"
               ],
               "path": [
-                "appointment",
+                "appointments",
                 "history"
               ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get Doctor Appointments (Filtered/Paginated)",
-          "request": {
+            },
             "auth": {
               "type": "bearer",
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{doctor_token}}",
+                  "value": "{{jwtToken}}",
                   "type": "string"
                 }
               ]
-            },
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Should return success and data\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "    pm.expect(response.data).to.be.an(\"array\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Appointment Details",
+          "request": {
             "method": "GET",
+            "header": [],
             "url": {
-              "raw": "{{base_url}}/doctor/appointments?date=2026-09-22&status=BOOKED&page=1&limit=10&sort=date",
+              "raw": "{{baseUrl}}/appointments/:id",
               "host": [
-                "{{base_url}}"
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "appointments",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Appointment details retrieved\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "    pm.expect(response.data.id).to.not.be.undefined;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reschedule Appointment",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/appointments/:id/reschedule",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "appointments",
+                ":id",
+                "reschedule"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"newDate\": \"2030-08-20\",\n    \"newSlotId\": \"11:00-11:15\"\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Rescheduled successfully\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "    pm.expect(response.message).to.equal(\"Appointment rescheduled successfully\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Accept Rescheduled Appointment",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/appointments/:id/accept-reschedule",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "appointments",
+                ":id",
+                "accept-reschedule"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reject Rescheduled Appointment",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/appointments/:id/reject-reschedule",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "appointments",
+                ":id",
+                "reject-reschedule"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancel Appointment",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/appointments/:id/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "appointments",
+                ":id",
+                "cancel"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"cancellationReason\": \"Patient rescheduled or cancelled\"\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Cancelled successfully\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "    pm.expect(response.message).to.equal(\"Appointment cancelled successfully\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Complete Appointment (Doctor Only)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/appointments/:id/complete",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "appointments",
+                ":id",
+                "complete"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"diagnosis\": \"Elevated heart rate & minor radiation fatigue\",\n    \"prescription\": \"Take rest, consume extra hydration, avoid stressful workloads\",\n    \"followUp\": \"Return for observation in two weeks\"\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Appointment completed successfully\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "    pm.expect(response.message).to.equal(\"Appointment completed successfully\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Doctor Appointments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/doctor/appointments?date=2026-09-20&status=BOOKED&page=1&limit=10&sort=date",
+              "host": [
+                "{{baseUrl}}"
               ],
               "path": [
                 "doctor",
@@ -649,7 +2017,7 @@
               "query": [
                 {
                   "key": "date",
-                  "value": "2026-09-22"
+                  "value": "2026-09-20"
                 },
                 {
                   "key": "status",
@@ -668,291 +2036,15 @@
                   "value": "date"
                 }
               ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get Appointment Details",
-          "request": {
+            },
             "auth": {
               "type": "bearer",
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{doctor_token}}",
+                  "value": "{{jwtToken}}",
                   "type": "string"
                 }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/appointment/{{appointmentId}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "appointment",
-                "{{appointmentId}}"
-              ],
-              "variable": []
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Complete Appointment (With Notes)",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{doctor_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"diagnosis\": \"Elevated heart rate & minor radiation fatigue\",\n  \"prescription\": \"Take rest, consume extra hydration, avoid stressful workloads\",\n  \"followUp\": \"Return for observation in two weeks\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/appointment/{{appointmentId}}/complete",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "appointment",
-                "{{appointmentId}}",
-                "complete"
-              ],
-              "variable": []
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get Notifications",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{patient_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "url": {
-              "raw": "{{base_url}}/notifications",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "notifications"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Mark Notification as Read",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{patient_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "PATCH",
-            "url": {
-              "raw": "{{base_url}}/notifications/{{appointmentId}}/read",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "notifications",
-                "{{appointmentId}}",
-                "read"
-              ]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "3. WAVE Scheduling Flow",
-      "item": [
-        {
-          "name": "Select Scheduling Type (WAVE)",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{doctor_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"type\": \"WAVE\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/doctor/scheduling",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "doctor",
-                "scheduling"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Create WAVE Availability",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{doctor_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"dayOfWeek\": \"TUESDAY\",\n  \"startTime\": \"10:00\",\n  \"endTime\": \"12:00\",\n  \"maxCapacity\": 5,\n  \"date\": \"2026-09-22\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/doctor/availability",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "doctor",
-                "availability"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get WAVE Availability",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{doctor_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "url": {
-              "raw": "{{base_url}}/doctor/availability/date?date=2026-09-22",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "doctor",
-                "availability",
-                "date"
-              ],
-              "query": [
-                {
-                  "key": "date",
-                  "value": "2026-09-22"
-                }
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const responseJson = pm.response.json();",
-                  "if (responseJson && responseJson.length > 0) {",
-                  "    pm.globals.set(\"availabilityId\", responseJson[0].id);",
-                  "    console.log(\"WAVE Availability ID set to \" + responseJson[0].id);",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "response": []
-        },
-        {
-          "name": "Book WAVE Appointment",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{patient_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"doctorId\": {{doctorId}},\n  \"waveId\": {{availabilityId}},\n  \"bookingSource\": \"ONLINE\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/appointment",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "appointment"
               ]
             }
           },
@@ -962,12 +2054,14 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "const responseJson = pm.response.json();",
-                  "const appData = responseJson.data || responseJson;",
-                  "if (appData && appData.id) {",
-                  "    pm.globals.set(\"appointmentId\", appData.id);",
-                  "    console.log(\"Appointment ID set to \" + appData.id);",
-                  "}"
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Appointments list retrieved\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "    pm.expect(response.data.appointments).to.be.an(\"array\");",
+                  "});"
                 ],
                 "type": "text/javascript"
               }
@@ -975,151 +2069,446 @@
           ]
         },
         {
-          "name": "Reschedule Appointment",
+          "name": "Trigger Reminders",
           "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/appointments/reminders/trigger",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "appointments",
+                "reminders",
+                "trigger"
+              ]
+            },
             "auth": {
               "type": "bearer",
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{patient_token}}",
+                  "value": "{{jwtToken}}",
                   "type": "string"
                 }
               ]
-            },
-            "method": "PATCH",
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Check reminders success response\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "    pm.expect(response.message).to.contain(\"reminders generated successfully\");",
+                  "    pm.expect(response.data.sent).to.be.a(\"number\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "07. Waitlist Management",
+      "item": [
+        {
+          "name": "Join Waitlist",
+          "request": {
+            "method": "POST",
             "header": [
               {
                 "key": "Content-Type",
                 "value": "application/json"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"date\": \"2026-09-22\",\n  \"startTime\": \"11:00\",\n  \"endTime\": \"11:15\"\n}"
-            },
             "url": {
-              "raw": "{{base_url}}/appointment/{{appointmentId}}/reschedule",
+              "raw": "{{baseUrl}}/appointments/waitlist",
               "host": [
-                "{{base_url}}"
+                "{{baseUrl}}"
               ],
               "path": [
-                "appointment",
-                "{{appointmentId}}",
-                "reschedule"
-              ],
-              "variable": []
+                "appointments",
+                "waitlist"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"doctorId\": 1\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
             }
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
         },
         {
-          "name": "Cancel Appointment",
+          "name": "Accept Waitlist Offer",
           "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/appointments/waitlist/:queueId/accept",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "appointments",
+                "waitlist",
+                ":queueId",
+                "accept"
+              ],
+              "variable": [
+                {
+                  "key": "queueId",
+                  "value": "1"
+                }
+              ]
+            },
             "auth": {
               "type": "bearer",
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{patient_token}}",
+                  "value": "{{jwtToken}}",
                   "type": "string"
                 }
               ]
-            },
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"cancellationReason\": \"Scheduling conflict\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/appointment/{{appointmentId}}/cancel",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "appointment",
-                "{{appointmentId}}",
-                "cancel"
-              ],
-              "variable": []
             }
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
         },
         {
-          "name": "Shrink Custom Override",
+          "name": "Reject Waitlist Offer",
           "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/appointments/waitlist/:queueId/reject",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "appointments",
+                "waitlist",
+                ":queueId",
+                "reject"
+              ],
+              "variable": [
+                {
+                  "key": "queueId",
+                  "value": "1"
+                }
+              ]
+            },
             "auth": {
               "type": "bearer",
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{doctor_token}}",
+                  "value": "{{jwtToken}}",
                   "type": "string"
                 }
               ]
-            },
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"startTime\": \"03:00 PM\",\n  \"endTime\": \"04:00 PM\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/doctor/availability/override/shrink/{{availabilityId}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "doctor",
-                "availability",
-                "override",
-                "shrink",
-                "{{availabilityId}}"
-              ],
-              "variable": []
             }
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "08. Notifications",
+      "item": [
+        {
+          "name": "Get Notifications",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Check notifications schema\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "    pm.expect(response.data).to.be.an(\"array\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mark Notification as Read",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/:id/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                ":id",
+                "read"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 or 404/403 depending on existence\", function () {",
+                  "    if (pm.response.code === 200) {",
+                  "        const response = pm.response.json();",
+                  "        pm.expect(response.success).to.be.true;",
+                  "        pm.expect(response.message).to.equal(\"Notification marked as read successfully\");",
+                  "    } else {",
+                  "        pm.expect(pm.response.code).to.be.oneOf([403, 404]);",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mark All Notifications as Read",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/read-all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "read-all"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Notification",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "09. System",
+      "item": [
+        {
+          "name": "Hello World (Root)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": []
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response is Hello World!\", function () {",
+                  "    pm.expect(pm.response.text()).to.equal(\"Hello World!\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
         }
       ]
     }
   ],
-  "event": [
-    {
-      "listen": "prerequest",
-      "script": {
-        "type": "text/javascript",
-        "exec": [
-          ""
-        ]
-      }
-    },
-    {
-      "listen": "test",
-      "script": {
-        "type": "text/javascript",
-        "exec": [
-          ""
-        ]
-      }
-    }
-  ],
   "variable": [
     {
-      "key": "base_url",
-      "value": "https://schedula-saurabh.onrender.com",
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "jwtToken",
+      "value": "",
       "type": "string"
     }
   ]

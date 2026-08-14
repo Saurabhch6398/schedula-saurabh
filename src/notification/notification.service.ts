@@ -7,7 +7,10 @@ import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 
 export type NotificationType =
-  'APPOINTMENT_BOOKED' | 'APPOINTMENT_CANCELLED' | 'APPOINTMENT_RESCHEDULED';
+  | 'APPOINTMENT_BOOKED'
+  | 'APPOINTMENT_CANCELLED'
+  | 'APPOINTMENT_RESCHEDULED'
+  | 'APPOINTMENT_REMINDER';
 
 function formatNotificationDate(date: Date): string {
   const day = date.getUTCDate();
@@ -35,6 +38,36 @@ function formatNotificationDate(date: Date): string {
   const minutesStr = String(minutes).padStart(2, '0');
 
   return `${day} ${monthName} at ${hours}:${minutesStr} ${ampm}`;
+}
+
+function formatReminderDate(date: Date): string {
+  const day = date.getUTCDate();
+  const monthNames = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+  const monthName = monthNames[date.getUTCMonth()];
+  return `${day} ${monthName}`;
+}
+
+function formatReminderTime(date: Date): string {
+  let hours = date.getUTCHours();
+  const minutes = date.getUTCMinutes();
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  hours = hours ? hours : 12;
+  const minutesStr = String(minutes).padStart(2, '0');
+  return `${hours}:${minutesStr} ${ampm}`;
 }
 
 @Injectable()
@@ -84,6 +117,17 @@ export class NotificationService {
     } else if (type === 'APPOINTMENT_RESCHEDULED') {
       title = 'Appointment Rescheduled';
       message = `Your appointment has been rescheduled to ${dateFormatted}.`;
+    } else if (type === 'APPOINTMENT_REMINDER') {
+      title = 'Appointment Reminder';
+      if (app.appointmentType === 'STREAM') {
+        const appointmentDate = app.slotStart ? formatReminderDate(app.slotStart) : '';
+        const appointmentTime = app.slotStart ? formatReminderTime(app.slotStart) : '';
+        message = `Reminder: You have an appointment with Dr. ${app.doctorProfile.fullName} on ${appointmentDate} at ${appointmentTime}.`;
+      } else {
+        const reportingTime = app.slotStart ? formatReminderTime(app.slotStart) : '';
+        const tokenNumber = app.tokenNumber ?? '';
+        message = `Reminder: You have an appointment with Dr. ${app.doctorProfile.fullName} today.\n\nReporting Time: ${reportingTime}\nToken Number: ${tokenNumber}`;
+      }
     }
 
     // 2. Duplicate Check: check if identical notification already exists to support idempotency
@@ -181,4 +225,3 @@ export class NotificationService {
     return { message: 'Notification deleted successfully' };
   }
 }
-
