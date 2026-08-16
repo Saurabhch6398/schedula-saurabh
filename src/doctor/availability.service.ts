@@ -13,6 +13,7 @@ import { ShrinkOverrideDto } from './dto/shrink-override.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { DoctorProfile } from '@prisma/client';
 import { AppointmentService } from '../appointment/appointment.service';
+import { NotificationService } from '../notification/notification.service';
 
 export interface WaveWindowResponse {
   id: number;
@@ -28,6 +29,7 @@ export class AvailabilityService {
     private readonly availabilityRepo: AvailabilityRepository,
     private readonly prisma: PrismaService,
     private readonly appointmentService: AppointmentService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   // Helper: Parses 24h or 12h time string to minutes from midnight
@@ -375,7 +377,9 @@ export class AvailabilityService {
 
           // Filter by affected day of week
           const affectedAppts = allFutureAppts.filter(
-            (app) => app.slotStart && this.getDayOfWeekFromDate(app.slotStart) === affectedDay,
+            (app) =>
+              app.slotStart &&
+              this.getDayOfWeekFromDate(app.slotStart) === affectedDay,
           );
 
           // Group by date
@@ -410,7 +414,8 @@ export class AvailabilityService {
               let spacingBuffer = 0;
               if (dateAppts.length > 1) {
                 spacingBuffer = Math.floor(
-                  (windowDuration - totalDurationNeeded) / (dateAppts.length - 1),
+                  (windowDuration - totalDurationNeeded) /
+                    (dateAppts.length - 1),
                 );
                 // Cap at original buffer time
                 if (spacingBuffer > (profile.bufferTime ?? 0)) {
@@ -420,7 +425,8 @@ export class AvailabilityService {
 
               for (let i = 0; i < dateAppts.length; i++) {
                 const app = dateAppts[i];
-                const newSlotStartMin = targetStartMin + i * (slotDuration + spacingBuffer);
+                const newSlotStartMin =
+                  targetStartMin + i * (slotDuration + spacingBuffer);
                 const newSlotEndMin = newSlotStartMin + slotDuration;
 
                 const newSlotStart = new Date(
@@ -463,6 +469,12 @@ export class AvailabilityService {
                   },
                 });
 
+                await this.notificationService.triggerNotification(
+                  tx,
+                  app.id,
+                  'APPOINTMENT_RESCHEDULED',
+                );
+
                 // Create Queue entry
                 await tx.appointmentQueue.create({
                   data: {
@@ -487,13 +499,15 @@ export class AvailabilityService {
               let spacingBuffer = 0;
               if (fitAppts.length > 1) {
                 spacingBuffer = Math.floor(
-                  (windowDuration - fitAppts.length * slotDuration) / (fitAppts.length - 1),
+                  (windowDuration - fitAppts.length * slotDuration) /
+                    (fitAppts.length - 1),
                 );
               }
 
               for (let i = 0; i < fitAppts.length; i++) {
                 const app = fitAppts[i];
-                const newSlotStartMin = targetStartMin + i * (slotDuration + spacingBuffer);
+                const newSlotStartMin =
+                  targetStartMin + i * (slotDuration + spacingBuffer);
                 const newSlotEndMin = newSlotStartMin + slotDuration;
 
                 const newSlotStart = new Date(
@@ -535,6 +549,12 @@ export class AvailabilityService {
                   },
                 });
 
+                await this.notificationService.triggerNotification(
+                  tx,
+                  app.id,
+                  'APPOINTMENT_RESCHEDULED',
+                );
+
                 await tx.appointmentQueue.create({
                   data: {
                     doctorProfileId: profile.id,
@@ -550,13 +570,14 @@ export class AvailabilityService {
 
               // Reschedule overflow patients
               for (const app of overflowAppts) {
-                const suggestResult = await this.appointmentService.suggestNextAvailable(
-                  profile.id,
-                  dateStr,
-                  'STREAM',
-                  undefined,
-                  tx,
-                );
+                const suggestResult =
+                  await this.appointmentService.suggestNextAvailable(
+                    profile.id,
+                    dateStr,
+                    'STREAM',
+                    undefined,
+                    tx,
+                  );
 
                 if (!suggestResult) {
                   throw new BadRequestException(
@@ -564,15 +585,31 @@ export class AvailabilityService {
                   );
                 }
 
-                const [sYear, sMonth, sDay] = suggestResult.date.split('-').map(Number);
-                const [startHourStr, startMinStr] = suggestResult.startTime.split(':');
-                const [endHourStr, endMinStr] = suggestResult.endTime.split(':');
+                const [sYear, sMonth, sDay] = suggestResult.date
+                  .split('-')
+                  .map(Number);
+                const [startHourStr, startMinStr] =
+                  suggestResult.startTime.split(':');
+                const [endHourStr, endMinStr] =
+                  suggestResult.endTime.split(':');
 
                 const newSlotStart = new Date(
-                  Date.UTC(sYear, sMonth - 1, sDay, Number(startHourStr), Number(startMinStr)),
+                  Date.UTC(
+                    sYear,
+                    sMonth - 1,
+                    sDay,
+                    Number(startHourStr),
+                    Number(startMinStr),
+                  ),
                 );
                 const newSlotEnd = new Date(
-                  Date.UTC(sYear, sMonth - 1, sDay, Number(endHourStr), Number(endMinStr)),
+                  Date.UTC(
+                    sYear,
+                    sMonth - 1,
+                    sDay,
+                    Number(endHourStr),
+                    Number(endMinStr),
+                  ),
                 );
 
                 await tx.appointment.update({
@@ -594,6 +631,12 @@ export class AvailabilityService {
                     }),
                   },
                 });
+
+                await this.notificationService.triggerNotification(
+                  tx,
+                  app.id,
+                  'APPOINTMENT_RESCHEDULED',
+                );
 
                 await tx.appointmentQueue.create({
                   data: {
@@ -655,7 +698,13 @@ export class AvailabilityService {
                   if (assignedCount >= waitlist.length) break;
 
                   const slotStartDt = new Date(
-                    Date.UTC(year, month - 1, day, Math.floor(currentMin / 60), currentMin % 60),
+                    Date.UTC(
+                      year,
+                      month - 1,
+                      day,
+                      Math.floor(currentMin / 60),
+                      currentMin % 60,
+                    ),
                   );
                   const slotEndDt = new Date(
                     Date.UTC(
@@ -812,13 +861,14 @@ export class AvailabilityService {
 
             // Reschedule overflow WAVE appointments
             for (const app of overflowAppts) {
-              const suggestResult = await this.appointmentService.suggestNextAvailable(
-                profile.id,
-                waveSlot.startTime.toISOString().split('T')[0],
-                'WAVE',
-                undefined,
-                tx,
-              );
+              const suggestResult =
+                await this.appointmentService.suggestNextAvailable(
+                  profile.id,
+                  waveSlot.startTime.toISOString().split('T')[0],
+                  'WAVE',
+                  undefined,
+                  tx,
+                );
 
               if (!suggestResult) {
                 throw new BadRequestException(
@@ -828,7 +878,10 @@ export class AvailabilityService {
 
               // Count booked in target wave
               const targetBookedCount = await tx.appointment.count({
-                where: { waveScheduleId: suggestResult.waveId, status: 'BOOKED' },
+                where: {
+                  waveScheduleId: suggestResult.waveId,
+                  status: 'BOOKED',
+                },
               });
 
               await tx.appointment.update({
@@ -850,6 +903,12 @@ export class AvailabilityService {
                   }),
                 },
               });
+
+              await this.notificationService.triggerNotification(
+                tx,
+                app.id,
+                'APPOINTMENT_RESCHEDULED',
+              );
 
               await tx.appointmentQueue.create({
                 data: {
@@ -885,8 +944,12 @@ export class AvailabilityService {
               where: { offeredWaveScheduleId: id, status: 'OFFERED' },
             });
 
-            const remainingCapacity = maxCapacity - currentBooked - offeredCount;
-            const assignableCount = Math.min(waitlist.length, remainingCapacity);
+            const remainingCapacity =
+              maxCapacity - currentBooked - offeredCount;
+            const assignableCount = Math.min(
+              waitlist.length,
+              remainingCapacity,
+            );
 
             for (let i = 0; i < assignableCount; i++) {
               const waitlistEntry = waitlist[i];
@@ -1322,8 +1385,14 @@ export class AvailabilityService {
         throw new ForbiddenException('You do not have access to this override');
       }
 
-      if (!customAvail.isAvailable || !customAvail.startTime || !customAvail.endTime) {
-        throw new BadRequestException('Cannot shrink an override that is already unavailable');
+      if (
+        !customAvail.isAvailable ||
+        !customAvail.startTime ||
+        !customAvail.endTime
+      ) {
+        throw new BadRequestException(
+          'Cannot shrink an override that is already unavailable',
+        );
       }
 
       const oldStartMin = this.parseTimeToMinutes(customAvail.startTime);
@@ -1348,7 +1417,9 @@ export class AvailabilityService {
         }
 
         if (newStartMin < oldStartMin || newEndMin > oldEndMin) {
-          throw new BadRequestException('Cannot expand availability window using shrink endpoint');
+          throw new BadRequestException(
+            'Cannot expand availability window using shrink endpoint',
+          );
         }
       } else {
         isAvailableNew = false;
@@ -1399,11 +1470,14 @@ export class AvailabilityService {
       const affectedAppts = bookedAppts.filter((app) => {
         if (!app.slotStart || !app.slotEnd) return false;
 
-        const appStartMin = app.slotStart.getUTCHours() * 60 + app.slotStart.getUTCMinutes();
-        const appEndMin = app.slotEnd.getUTCHours() * 60 + app.slotEnd.getUTCMinutes();
+        const appStartMin =
+          app.slotStart.getUTCHours() * 60 + app.slotStart.getUTCMinutes();
+        const appEndMin =
+          app.slotEnd.getUTCHours() * 60 + app.slotEnd.getUTCMinutes();
 
         // Check if it's within the old window
-        const inOldWindow = appStartMin >= oldStartMin && appEndMin <= oldEndMin;
+        const inOldWindow =
+          appStartMin >= oldStartMin && appEndMin <= oldEndMin;
         if (!inOldWindow) return false;
 
         if (!isAvailableNew) {
@@ -1415,18 +1489,21 @@ export class AvailabilityService {
       });
 
       // Sort affected appointments by slot start time to process them chronologically
-      affectedAppts.sort((a, b) => a.slotStart!.getTime() - b.slotStart!.getTime());
+      affectedAppts.sort(
+        (a, b) => a.slotStart!.getTime() - b.slotStart!.getTime(),
+      );
 
       // Reassign affected appointments sequentially
       for (const app of affectedAppts) {
         const dateStr = app.slotStart!.toISOString().split('T')[0];
-        const suggestResult = await this.appointmentService.suggestNextAvailable(
-          profile.id,
-          dateStr,
-          'STREAM',
-          undefined,
-          tx,
-        );
+        const suggestResult =
+          await this.appointmentService.suggestNextAvailable(
+            profile.id,
+            dateStr,
+            'STREAM',
+            undefined,
+            tx,
+          );
 
         if (!suggestResult) {
           throw new BadRequestException(
@@ -1439,10 +1516,22 @@ export class AvailabilityService {
         const [endHourStr, endMinStr] = suggestResult.endTime.split(':');
 
         const newSlotStart = new Date(
-          Date.UTC(sYear, sMonth - 1, sDay, Number(startHourStr), Number(startMinStr)),
+          Date.UTC(
+            sYear,
+            sMonth - 1,
+            sDay,
+            Number(startHourStr),
+            Number(startMinStr),
+          ),
         );
         const newSlotEnd = new Date(
-          Date.UTC(sYear, sMonth - 1, sDay, Number(endHourStr), Number(endMinStr)),
+          Date.UTC(
+            sYear,
+            sMonth - 1,
+            sDay,
+            Number(endHourStr),
+            Number(endMinStr),
+          ),
         );
 
         // Capture previous date/time
@@ -1474,6 +1563,12 @@ export class AvailabilityService {
             }),
           },
         });
+
+        await this.notificationService.triggerNotification(
+          tx,
+          app.id,
+          'APPOINTMENT_RESCHEDULED',
+        );
 
         // Create a RESCHEDULE queue entry
         await tx.appointmentQueue.create({

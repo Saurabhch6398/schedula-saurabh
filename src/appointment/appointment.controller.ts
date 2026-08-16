@@ -179,7 +179,10 @@ export class AppointmentController {
     @Request() req: RequestWithUser,
     @Param('id', ParseIntPipe) id: number,
   ) {
-    const data = await this.appointmentService.acceptReschedule(req.user.userId, id);
+    const data = await this.appointmentService.acceptReschedule(
+      req.user.userId,
+      id,
+    );
     return {
       success: true,
       message: 'Rescheduled appointment accepted successfully',
@@ -194,7 +197,10 @@ export class AppointmentController {
     @Request() req: RequestWithUser,
     @Param('id', ParseIntPipe) id: number,
   ) {
-    const data = await this.appointmentService.rejectReschedule(req.user.userId, id);
+    const data = await this.appointmentService.rejectReschedule(
+      req.user.userId,
+      id,
+    );
     return {
       success: true,
       message: 'Rescheduled appointment rejected and cancelled successfully',
@@ -208,7 +214,10 @@ export class AppointmentController {
     @Request() req: RequestWithUser,
     @Body() dto: { doctorId: number },
   ) {
-    const data = await this.appointmentService.joinWaitlist(req.user.userId, dto.doctorId);
+    const data = await this.appointmentService.joinWaitlist(
+      req.user.userId,
+      dto.doctorId,
+    );
     return {
       success: true,
       message: 'Successfully joined the waitlist',
@@ -223,7 +232,10 @@ export class AppointmentController {
     @Request() req: RequestWithUser,
     @Param('queueId', ParseIntPipe) queueId: number,
   ) {
-    const data = await this.appointmentService.acceptWaitlistOffer(req.user.userId, queueId);
+    const data = await this.appointmentService.acceptWaitlistOffer(
+      req.user.userId,
+      queueId,
+    );
     return {
       success: true,
       message: 'Waitlist offer accepted and appointment booked successfully',
@@ -238,7 +250,10 @@ export class AppointmentController {
     @Request() req: RequestWithUser,
     @Param('queueId', ParseIntPipe) queueId: number,
   ) {
-    const data = await this.appointmentService.rejectWaitlistOffer(req.user.userId, queueId);
+    const data = await this.appointmentService.rejectWaitlistOffer(
+      req.user.userId,
+      queueId,
+    );
     return {
       success: true,
       message: 'Waitlist offer rejected successfully',

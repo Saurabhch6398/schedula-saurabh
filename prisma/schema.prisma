@@ -20,6 +20,7 @@ model User {
 
   doctorProfile  DoctorProfile?
   patientProfile PatientProfile?
+  notifications  Notification[]
 
   @@map("users")
 }
@@ -189,4 +190,20 @@ model AppointmentQueue {
 
   @@map("appointment_queues")
 }
+
+model Notification {
+  id            Int      @id @default(autoincrement())
+  userId        Int      @map("user_id")
+  appointmentId Int?     @map("appointment_id")
+  title         String
+  message       String
+  type          String   // APPOINTMENT_BOOKED, APPOINTMENT_CANCELLED, APPOINTMENT_RESCHEDULED
+  isRead        Boolean  @default(false) @map("is_read")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
 

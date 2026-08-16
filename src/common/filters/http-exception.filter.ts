@@ -22,10 +22,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       status = exception.getStatus();
       const resContent = exception.getResponse();
-      if (
-        typeof resContent === 'object' &&
-        resContent !== null
-      ) {
+      if (typeof resContent === 'object' && resContent !== null) {
         Object.assign(errorResponse, resContent);
         const msg = (resContent as any).message;
         if (Array.isArray(msg)) {

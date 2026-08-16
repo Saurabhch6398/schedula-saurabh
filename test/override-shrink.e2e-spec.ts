@@ -229,7 +229,7 @@ describe('Custom Override Shrink (e2e)', () => {
     expect(app1!.previousDate).toBe(testDate);
     expect(app1!.previousStartTime).toBe('10AM');
     expect(app1!.previousEndTime).toBe('10:15AM');
-    
+
     // New slot should be 11:00 in UTC
     expect(app1!.slotStart!.getUTCHours()).toBe(11);
     expect(app1!.slotStart!.getUTCMinutes()).toBe(0);
