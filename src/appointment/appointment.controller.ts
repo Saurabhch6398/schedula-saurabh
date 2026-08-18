@@ -12,6 +12,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { AppointmentService } from './appointment.service';
+import { ReminderService } from '../reminder/reminder.service';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -30,7 +31,10 @@ interface RequestWithUser {
 @Controller(['appointments', 'appointment'])
 @UseGuards(AuthGuard, RolesGuard)
 export class AppointmentController {
-  constructor(private readonly appointmentService: AppointmentService) {}
+  constructor(
+    private readonly appointmentService: AppointmentService,
+    private readonly reminderService: ReminderService,
+  ) {}
 
   @Post()
   @Roles('PATIENT')
@@ -258,6 +262,18 @@ export class AppointmentController {
       success: true,
       message: 'Waitlist offer rejected successfully',
       data,
+    };
+  }
+
+  @Post('reminders/trigger')
+  @Roles('PATIENT', 'DOCTOR')
+  @HttpCode(HttpStatus.OK)
+  async triggerReminders() {
+    const sent = await this.reminderService.checkReminders();
+    return {
+      success: true,
+      message: `${sent} reminders generated successfully`,
+      data: { sent },
     };
   }
 }

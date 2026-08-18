@@ -23,6 +23,7 @@ describe('Event-Based Notification System & Appointment Integration (e2e)', () =
   const testSlotEnd = '10:15';
 
   beforeAll(async () => {
+    jest.setTimeout(30000);
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();

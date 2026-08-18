@@ -224,4 +224,10 @@ export class DoctorService {
 
     return { message: 'Scheduling updated successfully' };
   }
+
+  async getAllDoctors() {
+    return this.prisma.doctorProfile.findMany({
+      orderBy: { userId: 'asc' },
+    });
+  }
 }
